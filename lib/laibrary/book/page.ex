@@ -1,5 +1,7 @@
 defmodule Laibrary.Page do
-  alias Laibrary.Models.Page
+  alias Laibrary.Book.Models.Page
+  alias Laibrary.Models.Breadcrumb
+  alias Laibrary.Models.Navigation
   alias Laibrary.Service.MockContent
 
   def get_page(page_id) do
@@ -7,13 +9,26 @@ defmodule Laibrary.Page do
 
     has_content = false
 
-    %Page{
+    page = %Page{
       id: page_id,
       number: page_id,
       content: if(has_content, do: MockContent.get_page_content(page_id), else: nil),
       previous_page_id: get_previous_page_id(page_id),
       next_page_id: get_next_page_id(page_id),
     }
+
+    navigation = %Navigation{
+      breadcrumbs: [
+        %Breadcrumb{path: "/library", label: "Library"},
+        %Breadcrumb{path: "/floor/1", label: "Floor 1"},
+        %Breadcrumb{path: "/bookcase/1", label: "Bookcase 1"},
+        %Breadcrumb{path: "/shelf/1", label: "Shelf 1"},
+        %Breadcrumb{path: "/book/1", label: "Book 1"},
+        %Breadcrumb{path: "/book/1/page/#{page_id}", label: "Page #{page_id}"},
+      ]
+    }
+
+    {:ok, {page, navigation}}
   end
 
   def start_streaming_content(page_id, target_pid \\ self(), interval_ms \\ 100) do

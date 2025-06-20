@@ -56,6 +56,7 @@ defmodule LaibraryWeb do
         layout: {LaibraryWeb.Layouts, :app}
 
       unquote(html_helpers())
+      import LaibraryWeb.BreadcrumbsComponent
     end
   end
 
@@ -64,6 +65,7 @@ defmodule LaibraryWeb do
       use Phoenix.LiveComponent
 
       unquote(html_helpers())
+      import LaibraryWeb.BreadcrumbsComponent
     end
   end
 

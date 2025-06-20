@@ -23,6 +23,11 @@ defmodule LaibraryWeb.Router do
     live "/library/floor/:floor_id/shelf/:shelf_id", Library.Shelf, :shelf
     live "/library/floor/:floor_id/shelf/:shelf_id/book/:book_id", Book.Cover, :show
     live "/library/floor/:floor_id/shelf/:shelf_id/book/:book_id/page/:page_id", Book.Page, :page
+    live "/floor/:floor_id", Library.Floor, :floor
+    live "/bookcase/:bookcase_id", Library.Bookcase, :bookcase
+    live "/shelf/:shelf_id", Library.Shelf, :shelf
+    live "/book/:book_id", Book.Cover, :cover
+    live "/book/:book_id/page/:page_id", Book.Page, :page
   end
 
   # Other scopes may use custom stacks.
