@@ -20,7 +20,7 @@ config :laibrary, LaibraryWeb.Endpoint,
     layout: false
   ],
   pubsub_server: Laibrary.PubSub,
-  live_view: [signing_salt: "5OchIfvs"]
+  live_view: [signing_salt: "ThMV57rt"]
 
 # Configures the mailer
 #
@@ -30,6 +30,28 @@ config :laibrary, LaibraryWeb.Endpoint,
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
 config :laibrary, Laibrary.Mailer, adapter: Swoosh.Adapters.Local
+
+# Configure esbuild (the version is required)
+config :esbuild,
+  version: "0.17.11",
+  laibrary: [
+    args:
+      ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
+    cd: Path.expand("../assets", __DIR__),
+    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
+  ]
+
+# Configure tailwind (the version is required)
+config :tailwind,
+  version: "3.4.3",
+  laibrary: [
+    args: ~w(
+      --config=tailwind.config.js
+      --input=css/app.css
+      --output=../priv/static/assets/app.css
+    ),
+    cd: Path.expand("../assets", __DIR__)
+  ]
 
 # Configures Elixir's Logger
 config :logger, :console,

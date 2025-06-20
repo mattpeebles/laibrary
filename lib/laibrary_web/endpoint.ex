@@ -7,7 +7,7 @@ defmodule LaibraryWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_laibrary_key",
-    signing_salt: "9FUEKAYQ",
+    signing_salt: "MdeUK0qt",
     same_site: "Lax"
   ]
 

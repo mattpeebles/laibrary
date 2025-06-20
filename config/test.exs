@@ -17,7 +17,7 @@ config :laibrary, Laibrary.Repo,
 # you can enable the server option below.
 config :laibrary, LaibraryWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "KgzM9/QB/Tw23NuJN6iU8Il8QuQ3BxsQfkAuEttp1vcoHLrNRC+xub3KcSQhfkQP",
+  secret_key_base: "ivskwEH0NCvVrNw/uwj/rD03Rll3Ry0b/FGw/9tfXt9TYpGIhB3kaSwRU88cNPNQ",
   server: false
 
 # In test we don't send emails

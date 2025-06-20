@@ -1,6 +1,7 @@
 .PHONY: deps
 deps:
 	@mix deps.get
+	npm install --prefix assets
 
 .PHONY: setup
 setup: deps
@@ -8,7 +9,9 @@ setup: deps
 
 .PHONY: run
 run:
-	@mix phx.server
+	tmux new-session -d -s laibrary -n dev \;\
+		send-keys './scripts/dev.sh' C-m \;\
+		attach-session -t laibrary
 
 .PHONY: test
 test:

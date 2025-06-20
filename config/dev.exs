@@ -23,8 +23,11 @@ config :laibrary, LaibraryWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "VUcNPdoDvWWUMTqK/SIvyohdqBD65DtHqXDCf0UAWu73oUEHJ4Go7eiqc+eckaVw",
-  watchers: []
+  secret_key_base: "q54d6pLYH/YMoLbTiVSSd/+eTQYO/3cSmWn2qBhOGFTep39xHUgeNE5BXuW0A7Kg",
+  watchers: [
+    esbuild: {Esbuild, :install_and_run, [:laibrary, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:laibrary, ~w(--watch)]}
+  ]
 
 # ## SSL Support
 #

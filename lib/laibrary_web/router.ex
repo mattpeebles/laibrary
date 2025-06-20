@@ -17,7 +17,12 @@ defmodule LaibraryWeb.Router do
   scope "/", LaibraryWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", Library.Index, :index
+    live "/library", Library.Index, :index
+    live "/library/floor/:floor_id", Library.Floor, :floor
+    live "/library/floor/:floor_id/shelf/:shelf_id", Library.Shelf, :shelf
+    live "/library/floor/:floor_id/shelf/:shelf_id/book/:book_id", Book.Cover, :show
+    live "/library/floor/:floor_id/shelf/:shelf_id/book/:book_id/page/:page_id", Book.Page, :page
   end
 
   # Other scopes may use custom stacks.
