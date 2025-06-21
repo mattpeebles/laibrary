@@ -1,4 +1,4 @@
-defmodule Laibrary.Bookcase.Models.Shelf do
+defmodule Laibrary.Bookcase.ShelfSchema do
   defstruct [
     :id,
     :books,

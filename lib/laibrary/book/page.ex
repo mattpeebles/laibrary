@@ -1,7 +1,7 @@
 defmodule Laibrary.Page do
-  alias Laibrary.Book.Models.Page
-  alias Laibrary.Models.Breadcrumb
-  alias Laibrary.Models.Navigation
+  alias Laibrary.Book.PageSchema
+  alias Laibrary.Navigation.Breadcrumb
+  alias Laibrary.Navigation.Navigation
   alias Laibrary.Service.MockContent
 
   def get_page(page_id) do
@@ -9,7 +9,7 @@ defmodule Laibrary.Page do
 
     has_content = false
 
-    page = %Page{
+    page = %PageSchema{
       id: page_id,
       number: page_id,
       content: if(has_content, do: MockContent.get_page_content(page_id), else: nil),

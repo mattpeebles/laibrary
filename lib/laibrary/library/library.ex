@@ -1,11 +1,11 @@
 defmodule Laibrary.Library do
   alias Laibrary.Floor
-  alias Laibrary.Models.Library
+  alias Laibrary.Library.LibrarySchema
   import Ecto.Query, warn: false
   alias Laibrary.Repo
 
   def get_library(_library_id \\ nil) do
-    library = Repo.one(Library)
+    library = Repo.one(LibrarySchema)
     {:ok, library}
   end
 

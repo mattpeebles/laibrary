@@ -1,4 +1,4 @@
-defmodule Laibrary.Models.Library do
+defmodule Laibrary.Library.LibrarySchema do
   use Ecto.Schema
   import Ecto.Changeset
 

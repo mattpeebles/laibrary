@@ -1,8 +1,8 @@
 defmodule Laibrary.Bookcase.Shelf do
-  alias Laibrary.Bookcase.Models.Shelf
-  alias Laibrary.Models.Breadcrumb
-  alias Laibrary.Models.Navigation
-  alias Laibrary.Book.Models.Book
+  alias Laibrary.Bookcase.ShelfSchema
+  alias Laibrary.Navigation.Breadcrumb
+  alias Laibrary.Navigation.Navigation
+  alias Laibrary.Book.BookSchema
 
   def get_shelf(shelf_id) do
     shelf_id = String.to_integer(shelf_id)
@@ -14,7 +14,7 @@ defmodule Laibrary.Bookcase.Shelf do
       %Breadcrumb{path: "/shelf/1", label: "Shelf 1"},
     ]
 
-    %Shelf{id: shelf_id, books: books, navigation: %Navigation{breadcrumbs: breadcrumbs}}
+    %ShelfSchema{id: shelf_id, books: books, navigation: %Navigation{breadcrumbs: breadcrumbs}}
   end
 
   def list_books(_shelf_id) do
@@ -29,7 +29,7 @@ defmodule Laibrary.Bookcase.Shelf do
 
     for id <- 1..12 do
       title = if(Enum.random(0..1) == 1, do: Enum.random(titles), else: nil)
-      %Book{id: id, title: title}
+      %BookSchema{id: id, title: title}
     end
   end
 end

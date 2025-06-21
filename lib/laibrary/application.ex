@@ -10,6 +10,7 @@ defmodule Laibrary.Application do
     children = [
       LaibraryWeb.Telemetry,
       Laibrary.Repo,
+      Laibrary.Runtime.MapGenerator,
       {DNSCluster, query: Application.get_env(:laibrary, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Laibrary.PubSub},
       # Start the Finch HTTP client for sending emails

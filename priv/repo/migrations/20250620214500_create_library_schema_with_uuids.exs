@@ -13,7 +13,7 @@ defmodule Laibrary.Repo.Migrations.CreateLibrarySchemaWithUuids do
     create table(:floors, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
       add :name, :string, null: false
-      add :shape, :string, null: false
+      add :shape, :string, null: false # TODO: drop shape
       add :library_id, references(:libraries, type: :uuid, on_delete: :delete_all), null: false
       add :previous_floor_id, references(:floors, type: :uuid, on_delete: :delete_all)
       add :next_floor_id, references(:floors, type: :uuid, on_delete: :delete_all)
@@ -28,6 +28,7 @@ defmodule Laibrary.Repo.Migrations.CreateLibrarySchemaWithUuids do
       add :x, :integer, null: false
       add :y, :integer, null: false
       timestamps()
+      # TODO: add shape
     end
 
     create index(:rooms, [:floor_id])

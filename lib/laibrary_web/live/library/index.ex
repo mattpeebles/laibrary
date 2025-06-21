@@ -1,10 +1,11 @@
 defmodule LaibraryWeb.Library.Index do
   use LaibraryWeb, :live_view
+  alias Laibrary.Runtime.MapGenerator
 
   def mount(_params, _session, socket) do
     {:ok, library} = Laibrary.Library.get_library(nil)
-    {:ok, floor} = Laibrary.Floor.get_or_create_random_floor(library.id)
-    {:ok, assign(socket, floor: floor)}
+    {:ok, room} = MapGenerator.ensure_library(library.id)
+    {:ok, assign(socket, room: room)}
   end
 
   @spec render(any()) :: Phoenix.LiveView.Rendered.t()
@@ -13,7 +14,7 @@ defmodule LaibraryWeb.Library.Index do
     <h1>Library</h1>
     <div class="grid grid-cols-4 gap-4">
       <div class="border p-4 rounded shadow">
-        <.link navigate={~p"/floor/#{@floor.id}"}>
+        <.link navigate={~p"/room/#{@room.id}"}>
           Enter Library
         </.link>
       </div>

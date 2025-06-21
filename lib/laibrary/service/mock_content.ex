@@ -5,6 +5,13 @@ defmodule Laibrary.Service.MockContent do
     end
   end
 
+  def gibberish_name() do
+    gibberish_sentence(1..3)
+    |> String.split(" ")
+    |> Enum.map(&String.capitalize/1)
+    |> Enum.join(" ")
+  end
+
   def gibberish_sentence(word_count_range) do
     sentence =
       1..Enum.random(word_count_range)
