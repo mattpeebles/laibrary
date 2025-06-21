@@ -1,35 +1,43 @@
-defmodule Laibrary.Bookcase.Shelf do
-  alias Laibrary.Bookcase.ShelfSchema
-  alias Laibrary.Navigation.Breadcrumb
-  alias Laibrary.Navigation.Navigation
-  alias Laibrary.Book.BookSchema
+defmodule Laibrary.Shelf do
+  import Ecto.Query
+  alias Laibrary.Repo
+  alias Laibrary.Shelf.ShelfSchema
+  alias Laibrary.Book
 
-  def get_shelf(shelf_id) do
-    shelf_id = String.to_integer(shelf_id)
-    books = list_books(shelf_id)
-    breadcrumbs = [
-      %Breadcrumb{path: "/library", label: "Library"},
-      %Breadcrumb{path: "/floor/1", label: "Floor 1"},
-      %Breadcrumb{path: "/bookcase/1", label: "Bookcase 1"},
-      %Breadcrumb{path: "/shelf/1", label: "Shelf 1"},
-    ]
-
-    %ShelfSchema{id: shelf_id, books: books, navigation: %Navigation{breadcrumbs: breadcrumbs}}
+  def get_shelf(shelf_id, liveview_pid \\ self()) do
+    shelf = Repo.get!(ShelfSchema, shelf_id)
+    books = case Book.get_all_books_for_shelf(shelf_id) do
+      [] ->
+        Task.start(fn -> create_books(shelf_id, liveview_pid) end)
+        []
+      books ->
+        books
+    end
+    {:ok, {shelf, books}}
   end
 
-  def list_books(_shelf_id) do
-    titles = [
-      "The Infinite Shelf",
-      "Notes from the Margins",
-      "Whispers of Code",
-      "Dreams in Static",
-      "Fragments of Memory",
-      "Reflections of a Machine"
-    ]
-
-    for id <- 1..12 do
-      title = if(Enum.random(0..1) == 1, do: Enum.random(titles), else: nil)
-      %BookSchema{id: id, title: title}
+  defp create_books(shelf_id, liveview_pid) do
+    for x <- 0..34 do
+      {:ok, book} = Book.create_standard_book(shelf_id, x)
+      if liveview_pid, do: send(liveview_pid, {:book_created, book})
     end
+  end
+
+  def get_all_shelves_for_bookcase(bookcase_id) do
+    Repo.all(from s in ShelfSchema, where: s.bookcase_id == ^bookcase_id)
+  end
+
+  def create_standard_shelves(bookcase_id) do
+    shelves = for y <- 0..5 do
+      create(%{bookcase_id: bookcase_id, y: y})
+    end
+
+    {:ok, shelves}
+  end
+
+  defp create(attrs) do
+    %ShelfSchema{}
+    |> ShelfSchema.changeset(attrs)
+    |> Repo.insert()
   end
 end

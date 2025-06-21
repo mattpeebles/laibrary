@@ -8,8 +8,10 @@ defmodule Laibrary.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      {Registry, keys: :unique, name: Laibrary.Registry},
       LaibraryWeb.Telemetry,
       Laibrary.Repo,
+      Laibrary.StreamSupervisor,
       Laibrary.Runtime.MapGenerator,
       {DNSCluster, query: Application.get_env(:laibrary, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Laibrary.PubSub},

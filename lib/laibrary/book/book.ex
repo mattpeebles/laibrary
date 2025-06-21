@@ -1,16 +1,26 @@
 defmodule Laibrary.Book do
+  import Ecto.Query
+  alias Laibrary.Repo
   alias Laibrary.Book.BookSchema
-  alias Laibrary.Navigation.Breadcrumb
-  alias Laibrary.Navigation.Navigation
+  alias Laibrary.Page
+
+  def get_all_books_for_shelf(shelf_id) do
+    Repo.all(from b in BookSchema, where: b.shelf_id == ^shelf_id)
+  end
+
+  def create_standard_book(shelf_id, x) do
+    create(%{shelf_id: shelf_id, x: x})
+  end
+
+  defp create(attrs) do
+    %BookSchema{}
+    |> BookSchema.changeset(attrs)
+    |> Repo.insert()
+  end
 
   def get_book(book_id) do
-    breadcrumbs = [
-      %Breadcrumb{path: "/library", label: "Library"},
-      %Breadcrumb{path: "/floor/1", label: "Floor 1"},
-      %Breadcrumb{path: "/bookcase/1", label: "Bookcase 1"},
-      %Breadcrumb{path: "/shelf/1", label: "Shelf 1"},
-      %Breadcrumb{path: "/book/1", label: "Book 1"},
-    ]
-    %BookSchema{id: book_id, title: "Book #{book_id}", first_page_id: 1, navigation: %Navigation{breadcrumbs: breadcrumbs}}
+    book = Repo.get!(BookSchema, book_id)
+    {:ok, first_page} = Page.get_first_page(book_id)
+    {:ok, {book, first_page}}
   end
 end

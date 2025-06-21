@@ -77,10 +77,7 @@ defmodule Laibrary.Room do
     # currently we'll only have one room per floor, so let's just add stairs to it immediately
     # in the future, we'll have multiple rooms per floor, so we'll be adding doors to the other rooms
     # we'll need to be careful when creating stairs to other rooms to ensure we don't create a loop
-    {:ok, link} = RoomLink.create_stairs(room.id, "down")
-    IO.inspect("Creating Link")
-    IO.inspect(link)
-
+    {:ok, _link} = RoomLink.create_stairs(room.id, "down")
     {:ok, room}
   end
 

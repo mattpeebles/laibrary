@@ -1,57 +1,85 @@
 defmodule Laibrary.Page do
+  import Ecto.Query
+  alias Laibrary.Repo
   alias Laibrary.Book.PageSchema
-  alias Laibrary.Navigation.Breadcrumb
-  alias Laibrary.Navigation.Navigation
-  alias Laibrary.Service.MockContent
+
+  def finalize_page(page_id, s3_key, is_last_page \\ false) do
+    IO.inspect("finalize_page")
+    case Repo.get(PageSchema, page_id) do
+      nil ->
+        {:error, "Current page not found"}
+
+      current_page ->
+        if not is_last_page and current_page.next_page_id == nil do
+          {:ok, next_page} =
+            create_page(%{
+              book_id: current_page.book_id,
+              # TODO: in the future, this doesn't need to be sequential
+              page_number: current_page.page_number + 1,
+              previous_page_id: page_id,
+              next_page_id: nil,
+              s3_key: nil,
+            })
+
+          update_page(current_page, %{next_page_id: next_page.id, s3_key: s3_key})
+        else
+          update_page(current_page, %{s3_key: s3_key})
+        end
+    end
+  end
+
+  defp create_page(attrs) do
+    %PageSchema{}
+    |> PageSchema.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  defp update_page(%PageSchema{} = page, attrs) do
+    page
+    |> PageSchema.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def get_first_page(book_id) do
+    case Repo.one(
+           from p in PageSchema,
+             where: p.book_id == ^book_id and is_nil(p.previous_page_id),
+             limit: 1
+         ) do
+      nil ->
+        {:ok, first_page} =
+          create_page(%{
+            book_id: book_id,
+            page_number: 1,
+            previous_page_id: nil,
+            next_page_id: nil,
+            s3_key: nil
+          })
+
+        {:ok, first_page}
+
+      first_page ->
+        {:ok, first_page}
+    end
+  end
 
   def get_page(page_id) do
-    page_id = String.to_integer(page_id)
+    case Repo.get(PageSchema, page_id) do
+      nil ->
+        {:error, "Page not found"}
 
-    has_content = false
-
-    page = %PageSchema{
-      id: page_id,
-      number: page_id,
-      content: if(has_content, do: MockContent.get_page_content(page_id), else: nil),
-      previous_page_id: get_previous_page_id(page_id),
-      next_page_id: get_next_page_id(page_id),
-    }
-
-    navigation = %Navigation{
-      breadcrumbs: [
-        %Breadcrumb{path: "/library", label: "Library"},
-        %Breadcrumb{path: "/floor/1", label: "Floor 1"},
-        %Breadcrumb{path: "/bookcase/1", label: "Bookcase 1"},
-        %Breadcrumb{path: "/shelf/1", label: "Shelf 1"},
-        %Breadcrumb{path: "/book/1", label: "Book 1"},
-        %Breadcrumb{path: "/book/1/page/#{page_id}", label: "Page #{page_id}"},
-      ]
-    }
-
-    {:ok, {page, navigation}}
+      page ->
+        {:ok, {page, page.next_page_id}}
+    end
   end
 
-  def start_streaming_content(page_id, target_pid \\ self(), interval_ms \\ 100) do
-    chunks = chunk_content(generate_content(page_id))
-    Laibrary.Service.ContentServer.start_stream(chunks, interval_ms, target_pid)
+  def start_streaming_content(page_id, liveview_pid \\ self()) do
+    Laibrary.StreamSupervisor.start_stream_worker(%{
+      page_id: page_id,
+      liveview_pid: liveview_pid,
+      prompt: ""
+    })
+
+    {:ok, :stream_started}
   end
-
-  defp chunk_content(content) do
-    content
-    |> String.split("\n")
-    |> Enum.map(&(&1 <> "\n"))
-  end
-
-  defp generate_content(_page_id) do
-    for _ <- 1..Enum.random(5..20), into: "", do: MockContent.gibberish_sentence(2..10) <> "\n"
-  end
-
-  def get_next_page_id(page_id) when page_id < 15, do: page_id + 1
-
-  def get_next_page_id(_page_id), do: nil
-
-  @spec get_previous_page_id(any()) :: nil | number()
-  def get_previous_page_id(page_id) when page_id > 1, do: page_id - 1
-
-  def get_previous_page_id(_page_id), do: nil
 end
