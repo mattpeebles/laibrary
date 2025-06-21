@@ -38,14 +38,12 @@ defmodule Laibrary.Service.PageContentOrchestrator do
   end
 
   defp upload_to_s3(key, content) do
-    IO.inspect(key)
-    IO.inspect(content)
-    # ExAws.S3.put_object("your-bucket", key, content)
-    # |> ExAws.request()
-    # |> case do
-    #   {:ok, _} -> :ok
-    #   err -> {:error, err}
-    # end
+    ExAws.S3.put_object("laibrarypages", key, content)
+    |> ExAws.request()
+    |> case do
+      {:ok, _} -> :ok
+      err -> {:error, err}
+    end
     :ok
   end
 end

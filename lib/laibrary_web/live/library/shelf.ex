@@ -2,7 +2,6 @@ defmodule LaibraryWeb.Library.Shelf do
   use LaibraryWeb, :live_view
 
   def mount(%{"shelf_id" => shelf_id}, _session, socket) do
-    # TODO: there's problems here, let's also just stream the books here rather than waiting to create them all
     {:ok, {shelf, books}} = Laibrary.Shelf.get_shelf(shelf_id, self())
     {:ok, assign(socket, shelf: shelf, books: books)}
   end

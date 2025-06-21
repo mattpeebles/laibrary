@@ -69,7 +69,7 @@ defmodule Laibrary.Page do
         {:error, "Page not found"}
 
       page ->
-        {:ok, {page, page.next_page_id}}
+        {:ok, {page, get_public_url(page), page.next_page_id}}
     end
   end
 
@@ -81,5 +81,14 @@ defmodule Laibrary.Page do
     })
 
     {:ok, :stream_started}
+  end
+
+  def get_public_url(%PageSchema{s3_key: s3_key}) when not is_nil(s3_key) do
+    {:ok, url} = ExAws.S3.presigned_url(ExAws.Config.new(:s3), :get, "laibrarypages", s3_key, [])
+    url
+  end
+
+  def get_public_url(_) do
+    nil
   end
 end

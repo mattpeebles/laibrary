@@ -29,6 +29,12 @@ config :laibrary, Laibrary.Repo,
 config :laibrary, LaibraryWeb.Endpoint,
   secret_key_base: secret_key_base
 
+config :ex_aws,
+  http_client: ExAws.Request.Req,
+  access_key_id: env!("AWS_ACCESS_KEY_ID"),
+  secret_access_key: env!("AWS_SECRET_ACCESS_KEY"),
+  region: "us-west-2"
+
 # Optional: prod-specific endpoint config
 if config_env() == :prod do
   host = env!("PHX_HOST") || "example.com"
