@@ -8,11 +8,10 @@ defmodule Laibrary.Service.PageContentOrchestrator do
     GenServer.start_link(__MODULE__, %{page_id: page_id, liveview_pid: liveview_pid}, name: via(page_id))
   end
 
-  def via(page_id), do: {:via, Registry, {Laibrary.Registry, {:orchestrator, page_id}}}
+  def via(page_id), do: {:via, Registry, {Laibrary.Registry, {:orchestrator_page, page_id}}}
 
   @impl true
-  def init(%{page_id: page_id} = state) do
-    Registry.register(Laibrary.Registry, {:orchestrator, page_id}, nil)
+  def init(state) do
     {:ok, Map.merge(state, %{buffer: "", is_final: false})}
   end
 

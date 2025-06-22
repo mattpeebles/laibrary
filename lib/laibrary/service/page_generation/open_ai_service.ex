@@ -15,15 +15,15 @@ defmodule Laibrary.Service.OpenAiService do
 
   # API
 
-  def start_link(opts) do
+  def start_link(%{} = opts, name \\ nil) do
     content = generate_content()
     chunks = chunk_content(content)
-    opts = opts ++ [chunks: chunks, content: content]
-    GenServer.start_link(__MODULE__, opts, name: opts[:name] || :via_tuple_or_nil)
+    opts = Enum.into(opts, [chunks: chunks, content: content])
+    GenServer.start_link(__MODULE__, opts, name: name || :via_tuple_or_nil)
   end
 
-  def start_stream(interval_ms, target_pid \\ self()) do
-    start_link(interval_ms: interval_ms, target_pid: target_pid)
+  def start_stream(interval_ms, target_pid \\ self(), name \\ nil) do
+    start_link(%{interval_ms: interval_ms, target_pid: target_pid}, name)
   end
 
   # Server

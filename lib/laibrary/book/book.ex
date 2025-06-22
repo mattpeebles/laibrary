@@ -21,6 +21,19 @@ defmodule Laibrary.Book do
   def get_book(book_id) do
     book = Repo.get!(BookSchema, book_id)
     {:ok, first_page} = Page.get_first_page(book_id)
+
     {:ok, {book, first_page}}
+  end
+
+  def finalize_book(book_id, title, summary) do
+    book = Repo.get!(BookSchema, book_id)
+    Repo.update(BookSchema.changeset(book, %{title: title, summary: summary}))
+  end
+
+  def generate_cover(book_id, liveview_id \\ self()) do
+    IO.inspect("Starting book details worker")
+    Laibrary.StreamSupervisor.start_book_details_worker(%{book_id: book_id, liveview_pid: liveview_id})
+    IO.inspect("Book details worker started")
+    {:ok, :stream_started}
   end
 end

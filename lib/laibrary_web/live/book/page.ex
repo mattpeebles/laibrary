@@ -24,7 +24,7 @@ defmodule LaibraryWeb.Book.Page do
   end
 
   def handle_info({:stream_chunk, chunk}, socket) do
-    {:noreply, update(socket, :content, &(&1 <> chunk))}
+    {:noreply, update(socket, :content, &((&1 || "") <> chunk))}
   end
 
   def handle_info({:stream_done, %PageSchema{} = finalized_page}, socket) do
