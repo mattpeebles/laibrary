@@ -24,7 +24,8 @@ config :laibrary, Laibrary.Repo,
   url: database_url,
   pool_size: String.to_integer(env!("POOL_SIZE") || "10"),
   stacktrace: config_env() == :dev,
-  show_sensitive_data_on_connection_error: config_env() == :dev
+  show_sensitive_data_on_connection_error: config_env() == :dev,
+  prepare: :unnamed # needed for compatibility with supabase pgbouncer
 
 config :laibrary, LaibraryWeb.Endpoint,
   secret_key_base: secret_key_base
