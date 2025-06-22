@@ -22,7 +22,7 @@ defmodule Laibrary.Page do
     }
     case public_url do
       nil ->
-        start_streaming_content(page_id, liveview_pid)
+        start_streaming_content(page_id, page.book_id, liveview_pid)
         {:streaming, Map.put(page_info, :content, "")}
 
       _ ->
@@ -102,10 +102,11 @@ defmodule Laibrary.Page do
     Repo.get(PageSchema, page_id)
   end
 
-  def start_streaming_content(page_id, liveview_pid \\ self()) do
+  def start_streaming_content(page_id, book_id, liveview_pid \\ self()) do
     Laibrary.StreamSupervisor.start_stream_worker(%{
       page_id: page_id,
       liveview_pid: liveview_pid,
+      book_id: book_id,
       prompt: ""
     })
 

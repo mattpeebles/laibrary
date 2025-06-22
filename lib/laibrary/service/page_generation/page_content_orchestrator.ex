@@ -4,8 +4,8 @@ defmodule Laibrary.Service.PageContentOrchestrator do
   require Logger
   alias Laibrary.Page
 
-  def start_link(%{page_id: page_id, liveview_pid: liveview_pid}) do
-    GenServer.start_link(__MODULE__, %{page_id: page_id, liveview_pid: liveview_pid}, name: via(page_id))
+  def start_link(%{page_id: page_id, liveview_pid: liveview_pid, book_id: book_id}) do
+    GenServer.start_link(__MODULE__, %{page_id: page_id, liveview_pid: liveview_pid, book_id: book_id}, name: via(page_id))
   end
 
   def via(page_id), do: {:via, Registry, {Laibrary.Registry, {:orchestrator_page, page_id}}}
@@ -22,11 +22,11 @@ defmodule Laibrary.Service.PageContentOrchestrator do
     {:noreply, state}
   end
 
-  def handle_info({:stream_done, response}, %{page_id: page_id} = state) do
-    key = "pages/#{page_id}.txt"
+  def handle_info({:stream_done, response}, %{page_id: page_id, book_id: book_id} = state) do
+    s3_key = "pages/#{book_id}/#{page_id}.txt"
     {content, is_final} = response # TODO: this is gross, fix it
-    with :ok <- upload_to_s3(key, content),
-         {:ok, finalized_page} <- Page.finalize_page(page_id, key, is_final) do
+    with :ok <- upload_to_s3(s3_key, content),
+         {:ok, finalized_page} <- Page.finalize_page(page_id, s3_key, is_final) do
       send(state.liveview_pid, {:stream_done, finalized_page})
       {:stop, :normal, state}
     else
