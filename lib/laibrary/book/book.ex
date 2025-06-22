@@ -4,6 +4,30 @@ defmodule Laibrary.Book do
   alias Laibrary.Book.BookSchema
   alias Laibrary.Page
 
+  def get_book_for_view(book_id, liveview_pid \\ self()) do
+    book = case get_book(book_id) do
+      nil ->
+        {:error, "Book not found"}
+
+      book ->
+        book
+    end
+    {:ok, first_page} = Page.get_first_page(book_id)
+
+    book_details = %{
+      book_id: book_id,
+      shelf_id: book.shelf_id,
+      first_page_id: first_page.id,
+    }
+
+    if book.title != nil and book.summary != nil do
+      {:static, Map.put(book_details, :title, book.title) |> Map.put(:summary, book.summary)}
+    else
+      Laibrary.StreamSupervisor.start_book_details_worker(%{book_id: book_id, liveview_pid: liveview_pid})
+      {:streaming, Map.put(book_details, :title, "") |> Map.put(:summary, "")}
+    end
+  end
+
   def get_all_books_for_shelf(shelf_id) do
     Repo.all(from b in BookSchema, where: b.shelf_id == ^shelf_id, order_by: b.x)
   end
@@ -19,21 +43,11 @@ defmodule Laibrary.Book do
   end
 
   def get_book(book_id) do
-    book = Repo.get!(BookSchema, book_id)
-    {:ok, first_page} = Page.get_first_page(book_id)
-
-    {:ok, {book, first_page}}
+    Repo.get(BookSchema, book_id)
   end
 
   def finalize_book(book_id, title, summary) do
     book = Repo.get!(BookSchema, book_id)
     Repo.update(BookSchema.changeset(book, %{title: title, summary: summary}))
-  end
-
-  def generate_cover(book_id, liveview_id \\ self()) do
-    IO.inspect("Starting book details worker")
-    Laibrary.StreamSupervisor.start_book_details_worker(%{book_id: book_id, liveview_pid: liveview_id})
-    IO.inspect("Book details worker started")
-    {:ok, :stream_started}
   end
 end

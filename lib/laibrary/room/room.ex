@@ -1,7 +1,6 @@
 defmodule Laibrary.Room do
   import Ecto.Query, warn: false
   alias Laibrary.Room.RoomSchema
-  alias Laibrary.Navigation.Navigation
   alias Laibrary.Repo
   alias Laibrary.Service.MockContent
   alias Laibrary.Bookcase
@@ -9,23 +8,6 @@ defmodule Laibrary.Room do
 
   def get!(room_id) do
     Repo.get!(RoomSchema, room_id)
-  end
-
-  def get(room_id) do
-    room = get!(room_id)
-
-    breadcrumbs = [
-      # %Breadcrumb{path: "/library", label: "Library"},
-      # %Breadcrumb{path: "/floor/#{room.floor_id}", label: room.name || "Temp room name"}
-    ]
-
-    navigation = %Navigation{
-      breadcrumbs: breadcrumbs
-    }
-
-    # TODO: get bookcases
-    bookcases = []
-    {:ok, {room, bookcases, navigation}}
   end
 
   defp create_room(attrs) do

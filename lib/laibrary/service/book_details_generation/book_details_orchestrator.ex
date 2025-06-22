@@ -28,7 +28,6 @@ defmodule Laibrary.Service.BookDetailsOrchestrator do
   end
 
   def handle_info({:stream_done, response}, state) do
-    IO.inspect(state)
     {title, summary} = response # TODO: this is gross, fix it
     book_id = state.book_id
     with {:ok, _} <- Book.finalize_book(book_id, title, summary) do # TODO: this is gross, fix it

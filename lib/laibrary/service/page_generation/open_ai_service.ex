@@ -15,15 +15,15 @@ defmodule Laibrary.Service.OpenAiService do
 
   # API
 
-  def start_link(%{} = opts, name \\ nil) do
+  def start_link(opts, name \\ nil) do
     content = generate_content()
     chunks = chunk_content(content)
-    opts = Enum.into(opts, [chunks: chunks, content: content])
+    opts = Keyword.merge(opts, [chunks: chunks, content: content])
     GenServer.start_link(__MODULE__, opts, name: name || :via_tuple_or_nil)
   end
 
   def start_stream(interval_ms, target_pid \\ self(), name \\ nil) do
-    start_link(%{interval_ms: interval_ms, target_pid: target_pid}, name)
+    start_link([interval_ms: interval_ms, target_pid: target_pid], name)
   end
 
   # Server
@@ -42,8 +42,6 @@ defmodule Laibrary.Service.OpenAiService do
       index: 0,
       content: content
     }
-
-    IO.inspect(state)
     send(self(), :stream_next)
     {:ok, state}
   end
@@ -53,11 +51,8 @@ defmodule Laibrary.Service.OpenAiService do
   def handle_info(:stream_next, %__MODULE__{index: i, chunks: chunks} = state) do
     if i < length(chunks) do
       chunk = Enum.at(chunks, i)
-      IO.inspect(chunk)
       send(state.target_pid, {:stream_chunk, chunk})
-
       Process.send_after(self(), :stream_next, state.interval_ms)
-
       {:noreply, %{state | index: i + 1}}
     else
       send(state.target_pid, {:stream_done, {state.content, false}})

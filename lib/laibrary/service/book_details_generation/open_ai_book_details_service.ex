@@ -32,8 +32,6 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
   end
 
   def start_stream(interval_ms, target_pid \\ self(), name \\ nil) do
-    IO.inspect("Starting book details stream")
-
     title = generate_title()
     summary = generate_summary()
     title_chunks = chunk_content(title)
@@ -60,7 +58,6 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
 
   @impl true
   def init(opts) do
-    IO.inspect("Initializing book details stream")
     title_chunks = Keyword.fetch!(opts, :title_chunks)
     summary_chunks = Keyword.fetch!(opts, :summary_chunks)
     interval_ms = Keyword.fetch!(opts, :interval_ms)

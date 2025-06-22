@@ -1,25 +1,37 @@
 defmodule LaibraryWeb.Book.Page do
   use LaibraryWeb, :live_view
   alias Laibrary.Book.PageSchema
-  def mount(%{"page_id" => page_id, "book_id" => book_id}, _session, socket) do
-    {:ok, {page, public_url, next_page_id}} = Laibrary.Page.get_page(page_id)
 
-    case public_url do
-      nil ->
-        if connected?(socket) do
-          Laibrary.Page.start_streaming_content(page_id, self())
-        end
-        {:ok, assign(socket, page: page, content: "", book_id: book_id, next_page_id: next_page_id)}
+  defp assign_base(socket, page_info) do
+    assign(
+      socket,
+      Map.take(page_info, [
+        :page_id,
+        :book_id,
+        :next_page_id,
+        :page_number,
+        :previous_page_id,
+        :content
+      ])
+    )
+  end
 
-      _ ->
-        case Req.get(public_url) do
-          {:ok, %Req.Response{status: 200, body: body}} ->
-            {:ok, assign(socket, page: page, content: body, book_id: book_id, next_page_id: next_page_id)}
+  def mount(%{"page_id" => page_id, "book_id" => _book_id}, _session, socket) do
+    case Laibrary.Page.load_page_for_view(page_id, self()) do
+      {:streaming, page_info} ->
+        {
+          :ok,
+          assign_base(socket, page_info)
+        }
 
-          {:error, reason} ->
-            {:ok, assign(socket, page: page, content: "Failed to fetch: #{inspect(reason)}", book_id: book_id, next_page_id: next_page_id)}
-        end
+      {:static, page_info} ->
+        {
+          :ok,
+          assign_base(socket, page_info)
+        }
 
+      {:error, page_info} ->
+        {:ok, assign_base(socket, page_info)}
     end
   end
 
@@ -38,34 +50,31 @@ defmodule LaibraryWeb.Book.Page do
     </.link>
 
     <div style="white-space: pre-wrap;">
-      <%= @content %>
+      {@content}
     </div>
 
     <div class="flex justify-between items-center mb-6">
-    <%= if @page.previous_page_id do %>
-      <.link navigate={~p"/book/#{@book_id}/page/#{@page.previous_page_id}"}>
-        Previous Page
-      </.link>
-    <% else %>
-      <.link navigate={~p"/book/#{@book_id}"}>
-      Previous Page
-    </.link>
-    <% end %>
+      <%= if @previous_page_id do %>
+        <.link navigate={~p"/book/#{@book_id}/page/#{@previous_page_id}"}>
+          Previous Page
+        </.link>
+      <% else %>
+        <.link navigate={~p"/book/#{@book_id}"}>
+          Previous Page
+        </.link>
+      <% end %>
 
-    <div>
-    <%= @page.page_number %>
-    </div>
+      <div>
+        {@page_number}
+      </div>
 
-
-    <%= if @next_page_id do %>
+      <%= if @next_page_id do %>
         <.link navigate={~p"/book/#{@book_id}/page/#{@next_page_id}"}>
           Next Page
         </.link>
       <% else %>
-      <div>
-      </div>
+        <div></div>
       <% end %>
-
     </div>
     """
   end

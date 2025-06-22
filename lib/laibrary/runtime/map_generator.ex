@@ -72,7 +72,7 @@ defmodule Laibrary.Runtime.MapGenerator do
         end
 
       %RoomLinkSchema{target_room_id: target_room_id} ->
-        {:reply, {:ok, Room.get(target_room_id)}, state}
+        {:reply, {:ok, Room.get!(target_room_id)}, state}
     end
   end
 
@@ -114,13 +114,6 @@ defmodule Laibrary.Runtime.MapGenerator do
     |> Floor.get!()
     |> Map.get(:library_id)
     |> Floor.create_floor_for_library()
-    |> case do
-      {:ok, floor} ->
-        {:ok, floor}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
   end
   defp maybe_create_floor_below(source_room_id, _), do: Room.get!(source_room_id).floor_id
 

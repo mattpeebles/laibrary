@@ -1,14 +1,18 @@
 defmodule LaibraryWeb.Book.Cover do
   use LaibraryWeb, :live_view
 
+  defp assign_base(socket, book_details) do
+    assign(socket, Map.take(book_details, [:book_id, :shelf_id, :first_page_id, :title, :summary]))
+  end
+
   def mount(%{"book_id" => book_id}, _session, socket) do
-    {:ok, {book, first_page}} = Laibrary.Book.get_book(book_id)
+    case Laibrary.Book.get_book_for_view(book_id, self()) do
+      {:static, book_details} ->
+        {:ok, assign_base(socket, book_details)}
 
-    if connected?(socket) do
-      Laibrary.Book.generate_cover(book_id, self())
+      {:streaming, book_details} ->
+        {:ok, assign_base(socket, book_details)}
     end
-
-    {:ok, assign(socket, book: book, first_page: first_page, title: book.title || "", summary: book.summary || "")}
   end
 
   def handle_info({:title_chunk, chunk}, socket) do
@@ -25,7 +29,7 @@ defmodule LaibraryWeb.Book.Cover do
 
   def render(assigns) do
     ~H"""
-    <.link navigate={~p"/shelf/#{@book.shelf_id}"}>
+    <.link navigate={~p"/shelf/#{@shelf_id}"}>
       Back to Shelf
     </.link>
 
@@ -35,7 +39,7 @@ defmodule LaibraryWeb.Book.Cover do
       <%= @summary %>
     </div>
 
-    <.link navigate={~p"/book/#{@book.id}/page/#{@first_page.id}"}>
+    <.link navigate={~p"/book/#{@book_id}/page/#{@first_page_id}"}>
       Start Reading
     </.link>
     """

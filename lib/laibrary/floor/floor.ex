@@ -1,11 +1,8 @@
 defmodule Laibrary.Floor do
   alias Laibrary.Floor.FloorSchema
-  alias Laibrary.Navigation.Breadcrumb
-  alias Laibrary.Navigation.Navigation
   import Ecto.Query, warn: false
   alias Laibrary.Repo
   alias Laibrary.Service.MockContent
-  alias Library.Room
 
   def get(floor_id) do
     Repo.get(FloorSchema, floor_id)

@@ -3,8 +3,43 @@ defmodule Laibrary.Page do
   alias Laibrary.Repo
   alias Laibrary.Book.PageSchema
 
+  def load_page_for_view(page_id, liveview_pid \\ self()) do
+    page = case get_page(page_id) do
+      nil ->
+        {:error, "Page not found"}
+
+      page -> page
+    end
+
+    public_url = get_public_url(page)
+
+    page_info = %{
+      book_id: page.book_id,
+      page_id: page_id,
+      next_page_id: page.next_page_id,
+      page_number: page.page_number,
+      previous_page_id: page.previous_page_id,
+    }
+    case public_url do
+      nil ->
+        start_streaming_content(page_id, liveview_pid)
+        {:streaming, Map.put(page_info, :content, "")}
+
+      _ ->
+        case Req.get(public_url) do
+          {:ok, %Req.Response{status: 200, body: body}} ->
+            {:static, Map.put(page_info, :content, body)}
+
+          {:error, _reason} ->
+            {:error, Map.put(page_info, :content, "Unable to fetch page content")}
+        end
+    end
+
+
+
+  end
+
   def finalize_page(page_id, s3_key, is_last_page \\ false) do
-    IO.inspect("finalize_page")
     case Repo.get(PageSchema, page_id) do
       nil ->
         {:error, "Current page not found"}
@@ -64,13 +99,14 @@ defmodule Laibrary.Page do
   end
 
   def get_page(page_id) do
-    case Repo.get(PageSchema, page_id) do
-      nil ->
-        {:error, "Page not found"}
+    Repo.get(PageSchema, page_id)
+    # case Repo.get(PageSchema, page_id) do
+    #   nil ->
+    #     {:error, "Page not found"}
 
-      page ->
-        {:ok, {page, get_public_url(page), page.next_page_id}}
-    end
+    #   page ->
+    #     {:ok, {page, get_public_url(page), page.next_page_id}}
+    # end
   end
 
   def start_streaming_content(page_id, liveview_pid \\ self()) do

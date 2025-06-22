@@ -1,7 +1,7 @@
 import { context } from "esbuild"
 
 const ctx = await context({
-  entryPoints: ["/assets/app.js"],
+  entryPoints: ["js/app.js"],
   bundle: true,
   target: "es2017",
   outdir: "../priv/static/assets",

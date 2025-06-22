@@ -18,21 +18,16 @@ defmodule Laibrary.StreamSupervisor do
       type: :worker
     }
 
-    IO.inspect(spec)
-
     DynamicSupervisor.start_child(__MODULE__, spec)
   end
 
-  def start_book_details_worker(%{book_id: book_id, liveview_pid: pid} = args) do
+  def start_book_details_worker(%{book_id: book_id, liveview_pid: _pid} = args) do
     spec = %{
       id: {:book_details_worker, book_id},
       start: {Laibrary.Service.BookDetailsWorker, :start_link, [args]},
       restart: :temporary,
       type: :worker
     }
-
-    IO.inspect("Book details worker spec")
-    IO.inspect(spec)
 
     DynamicSupervisor.start_child(__MODULE__, spec)
   end

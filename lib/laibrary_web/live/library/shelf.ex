@@ -7,7 +7,7 @@ defmodule LaibraryWeb.Library.Shelf do
   end
 
   def handle_info({:book_created, book}, socket) do
-    {:noreply, update(socket, :books, fn books -> [book | books] end)}
+    {:noreply, update(socket, :books, fn books -> books ++ [book] end)}
   end
 
   def render(assigns) do
