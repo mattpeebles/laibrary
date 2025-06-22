@@ -2,8 +2,17 @@ defmodule LaibraryWeb.Library.Bookcase do
   use LaibraryWeb, :live_view
 
   def mount(%{"bookcase_id" => bookcase_id}, _session, socket) do
-    {:ok, {bookcase, shelves}} = Laibrary.Bookcase.render_bookcase(bookcase_id)
-    {:ok, assign(socket, bookcase: bookcase, shelves: shelves)}
+    case Laibrary.Bookcase.get_bookcase_for_view(bookcase_id, self()) do
+      {:static, {bookcase, shelves}} ->
+        {:ok, assign(socket, bookcase: bookcase, shelves: shelves)}
+
+      {:streaming, {bookcase, shelves}} ->
+        {:ok, assign(socket, bookcase: bookcase, shelves: shelves)}
+    end
+  end
+
+  def handle_info({:shelf_created, shelf}, socket) do
+    {:noreply, update(socket, :shelves, fn shelves -> shelves ++ [shelf] end)}
   end
 
   def render(assigns) do

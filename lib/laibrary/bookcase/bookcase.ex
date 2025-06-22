@@ -4,10 +4,31 @@ defmodule Laibrary.Bookcase do
   alias Laibrary.Shelf
   import Ecto.Query
 
+  def get_bookcase_for_view(bookcase_id, liveview_pid) do
+    bookcase = Repo.get!(BookcaseSchema, bookcase_id)
+    shelves = Shelf.get_all_shelves_for_bookcase(bookcase_id)
+
+    if length(shelves) == 0 do
+      stream_shelves(bookcase, liveview_pid)
+      {:streaming, {bookcase, shelves}}
+    else
+      {:static, {bookcase, shelves}}
+    end
+  end
+
   def render_bookcase(bookcase_id) do
     bookcase = Repo.get!(BookcaseSchema, bookcase_id)
     shelves = Shelf.get_all_shelves_for_bookcase(bookcase_id)
     {:ok, {bookcase, shelves}}
+  end
+
+  def stream_shelves(%BookcaseSchema{} = bookcase, liveview_pid) do
+    Task.start(fn ->
+      for y <- 0..5 do
+        {:ok, shelf} = Shelf.create_standard_shelf(bookcase.id, y)
+        send(liveview_pid, {:shelf_created, shelf})
+      end
+    end)
   end
 
   defp create(attrs) do
@@ -23,9 +44,6 @@ defmodule Laibrary.Bookcase do
       y: y,
       z: 0
     })
-
-    # TODO: let's defer this until the user enters the bookcase
-    {:ok, _shelves} = Shelf.create_standard_shelves(bookcase.id)
 
     {:ok, bookcase}
   end

@@ -27,12 +27,8 @@ defmodule Laibrary.Shelf do
     Repo.all(from s in ShelfSchema, where: s.bookcase_id == ^bookcase_id, order_by: s.y)
   end
 
-  def create_standard_shelves(bookcase_id) do
-    shelves = for y <- 0..5 do
-      create(%{bookcase_id: bookcase_id, y: y})
-    end
-
-    {:ok, shelves}
+  def create_standard_shelf(bookcase_id, y) do
+    create(%{bookcase_id: bookcase_id, y: y})
   end
 
   defp create(attrs) do
