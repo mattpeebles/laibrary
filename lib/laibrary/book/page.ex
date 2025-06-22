@@ -100,13 +100,6 @@ defmodule Laibrary.Page do
 
   def get_page(page_id) do
     Repo.get(PageSchema, page_id)
-    # case Repo.get(PageSchema, page_id) do
-    #   nil ->
-    #     {:error, "Page not found"}
-
-    #   page ->
-    #     {:ok, {page, get_public_url(page), page.next_page_id}}
-    # end
   end
 
   def start_streaming_content(page_id, liveview_pid \\ self()) do
