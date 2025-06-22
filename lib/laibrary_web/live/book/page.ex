@@ -33,6 +33,10 @@ defmodule LaibraryWeb.Book.Page do
 
   def render(assigns) do
     ~H"""
+    <.link navigate={~p"/book/#{@book_id}"}>
+      Back to Book
+    </.link>
+
     <div style="white-space: pre-wrap;">
       <%= @content %>
     </div>
@@ -48,10 +52,18 @@ defmodule LaibraryWeb.Book.Page do
     </.link>
     <% end %>
 
+    <div>
+    <%= @page.page_number %>
+    </div>
+
+
     <%= if @next_page_id do %>
         <.link navigate={~p"/book/#{@book_id}/page/#{@next_page_id}"}>
           Next Page
         </.link>
+      <% else %>
+      <div>
+      </div>
       <% end %>
 
     </div>

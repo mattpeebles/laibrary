@@ -25,6 +25,10 @@ defmodule LaibraryWeb.Book.Cover do
 
   def render(assigns) do
     ~H"""
+    <.link navigate={~p"/shelf/#{@book.shelf_id}"}>
+      Back to Shelf
+    </.link>
+
     <h2><%= @title %></h2>
 
     <div>
@@ -32,7 +36,7 @@ defmodule LaibraryWeb.Book.Cover do
     </div>
 
     <.link navigate={~p"/book/#{@book.id}/page/#{@first_page.id}"}>
-      Next Page
+      Start Reading
     </.link>
     """
   end

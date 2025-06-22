@@ -5,7 +5,7 @@ defmodule Laibrary.Book do
   alias Laibrary.Page
 
   def get_all_books_for_shelf(shelf_id) do
-    Repo.all(from b in BookSchema, where: b.shelf_id == ^shelf_id)
+    Repo.all(from b in BookSchema, where: b.shelf_id == ^shelf_id, order_by: b.x)
   end
 
   def create_standard_book(shelf_id, x) do

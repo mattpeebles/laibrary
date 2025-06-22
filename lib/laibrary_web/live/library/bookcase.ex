@@ -8,6 +8,10 @@ defmodule LaibraryWeb.Library.Bookcase do
 
   def render(assigns) do
     ~H"""
+    <.link navigate={~p"/room/#{@bookcase.room_id}"}>
+      Back to Room
+    </.link>
+
     <h1>Bookcase</h1>
     <div class="grid grid-cols-4 gap-4">
       <%= for shelf <- @shelves do %>

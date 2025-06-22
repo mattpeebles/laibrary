@@ -24,7 +24,7 @@ defmodule Laibrary.Shelf do
   end
 
   def get_all_shelves_for_bookcase(bookcase_id) do
-    Repo.all(from s in ShelfSchema, where: s.bookcase_id == ^bookcase_id)
+    Repo.all(from s in ShelfSchema, where: s.bookcase_id == ^bookcase_id, order_by: s.y)
   end
 
   def create_standard_shelves(bookcase_id) do
