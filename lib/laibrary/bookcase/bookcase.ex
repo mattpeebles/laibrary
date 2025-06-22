@@ -24,6 +24,7 @@ defmodule Laibrary.Bookcase do
       z: 0
     })
 
+    # TODO: let's defer this until the user enters the bookcase
     {:ok, _shelves} = Shelf.create_standard_shelves(bookcase.id)
 
     {:ok, bookcase}

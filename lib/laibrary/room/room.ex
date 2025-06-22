@@ -6,6 +6,28 @@ defmodule Laibrary.Room do
   alias Laibrary.Bookcase
   alias Laibrary.RoomLink
 
+  def get_room_for_view(room_id, liveview_pid) do
+    room = get!(room_id)
+    bookcases = Bookcase.get_all_bookcases_for_room(room_id)
+    room_links = RoomLink.get_all_room_links_for_room(room_id)
+
+    room_details = %{
+      room_id: room.id,
+      name: room.name,
+      bookcases: bookcases,
+      room_links: room_links
+    }
+
+    case length(bookcases) do
+      0 ->
+        stream_bookcases(room, liveview_pid)
+        {:streaming, room_details}
+
+      _ ->
+        {:static, room_details}
+    end
+  end
+
   def get!(room_id) do
     Repo.get!(RoomSchema, room_id)
   end
@@ -16,41 +38,37 @@ defmodule Laibrary.Room do
     |> Repo.insert()
   end
 
-  def enter_room(room_id) do
-    room = get!(room_id)
-    bookcases = Bookcase.get_all_bookcases_for_room(room_id)
-    room_links = RoomLink.get_all_room_links_for_room(room_id)
-    {:ok, {room, bookcases, room_links}}
-  end
-
   def create_for_floor(floor_id, x, y) do
     # TODO: ensure there's no collision with other rooms, otherwise raise an error
 
     shape = random_shape()
     name = MockContent.gibberish_name()
 
-    with {:ok, room} <- create_room(%{
+    create_room(%{
       floor_id: floor_id,
       x: x,
       y: y,
       shape: shape,
       name: name
-    }) do
+    })
+  end
+
+  def stream_bookcases(%RoomSchema{} = room, liveview_pid) do
+    Task.start(fn ->
       bookcase_positions = %{
-        "square" => [{0,0}, {1,0}, {0,1}, {1,1}],
-        "rectangle" => [{0,0}, {1,0}, {0,1}, {1,1}],
-        "triangle" => [{0,0}, {1,0}, {1,1}],
-        "hexagon" => [{0,1}, {1,0}, {0,-1}, {-1,0}, {-1,1}, {1,-1}]
+        "square" => [{0, 0}, {1, 0}, {0, 1}, {1, 1}],
+        "rectangle" => [{0, 0}, {1, 0}, {0, 1}, {1, 1}],
+        "triangle" => [{0, 0}, {1, 0}, {1, 1}],
+        "hexagon" => [{0, 1}, {1, 0}, {0, -1}, {-1, 0}, {-1, 1}, {1, -1}]
       }
 
       bookcase_positions
-      |> Map.get(shape)
+      |> Map.get(room.shape)
       |> Enum.each(fn {x, y} ->
-        Bookcase.create_standard_bookcase(room.id, x, y)
+        {:ok, bookcase} = Bookcase.create_standard_bookcase(room.id, x, y)
+        send(liveview_pid, {:bookcase_created, bookcase})
       end)
-
-      {:ok, room}
-    end
+    end)
   end
 
   def create_first_room_for_floor(floor_id) do
