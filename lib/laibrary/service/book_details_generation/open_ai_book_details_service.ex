@@ -1,125 +1,206 @@
-#TODO: this is also gross, temporary just to flesh out the logic for everything
+# TODO: this is also gross, temporary just to flesh out the logic for everything
 # but this ai service just needs to conform to the open ai stream events
 # so that the orchestrator can handle the mappings appropirately
 
 defmodule Laibrary.Service.OpenAiBookDetailsService do
   use GenServer
 
-  alias Laibrary.Service.MockContent
   alias Laibrary.Service.OpenAI
+  require Logger
 
-  defstruct [:title_chunks, :summary_chunks, :interval_ms, :target_pid, :title_index, :summary_index, :title, :summary]
+  defstruct [
+    :target_pid,
+    :title,
+    :summary,
+    :summary_deltas,
+    :summary_acc,
+    :title_deltas,
+    :title_acc,
+    :mode
+  ]
 
   @type state :: %__MODULE__{
-          title_chunks: [String.t()],
-          summary_chunks: [String.t()],
-          interval_ms: pos_integer(),
           target_pid: pid(),
-          title_index: non_neg_integer(),
-          summary_index: non_neg_integer(),
           title: String.t(),
-          summary: String.t()
+          summary: String.t(),
+          summary_deltas: [%{}],
+          summary_acc: String.t(),
+          title_acc: String.t(),
+          title_deltas: [%{}],
+          mode: :title | :summary
         }
 
-  @supported_genres [:fantasy, :mystery, :romance, :thriller, :sci_fi, :historical, :contemporary, :horror, :adventure, :literary]
+  @supported_genres [
+    :fantasy,
+    :mystery,
+    :romance,
+    :thriller,
+    :sci_fi,
+    :historical,
+    :contemporary,
+    :horror,
+    :adventure,
+    :literary
+  ]
   @supported_audiences [:children, :young_adult, :adults, :all_ages]
-  @supported_tones [:dark, :light, :humorous, :serious, :mysterious, :romantic, :adventurous, :melancholic, :uplifting, :suspenseful]
+  @supported_tones [
+    :dark,
+    :light,
+    :humorous,
+    :serious,
+    :mysterious,
+    :romantic,
+    :adventurous,
+    :melancholic,
+    :uplifting,
+    :suspenseful
+  ]
 
-  def start_stream(interval_ms, target_pid \\ self(), name \\ nil) do
-    {:ok, %{"description" => summary}} = OpenAI.Response.create("pmpt_6865cdab3170819396bbdcae1ee3da0a024478a3abe3d369",
-    nil,
-    %{
-      "genre" => Enum.random(@supported_genres) |> to_string(),
-      "tone" => Enum.random(@supported_tones) |> to_string(),
-      "audience" => Enum.random(@supported_audiences) |> to_string()
-
-    })
-    {:ok, %{"title" => title}} = OpenAI.Response.create("pmpt_6865fdb4a37c8195b04c7b92e5b63b65041d983c23448361", nil, %{"description" => summary})
-    IO.inspect(title, label: "Title", pretty: true)
-    IO.inspect(summary, label: "Summary", pretty: true)
-    title_chunks = chunk_content(title)
-    summary_chunks = chunk_content(summary)
-
+  def start_stream(target_pid \\ self()) do
     opts = [
-      interval_ms: interval_ms,
       target_pid: target_pid,
-      title_chunks: title_chunks,
-      summary_chunks: summary_chunks,
-      title: title,
-      summary: summary
+      title: "",
+      summary: "",
+      summary_deltas: [],
+      summary_acc: "",
+      mode: :summary
     ]
 
-    if name do
-      GenServer.start_link(__MODULE__, opts, name: name)
-    else
-      GenServer.start_link(__MODULE__, opts)
-    end
-  end
+    {:ok, summary_stream_pid} = GenServer.start_link(__MODULE__, opts)
 
+    OpenAI.Response.stream(
+      summary_stream_pid,
+      "pmpt_6865cdab3170819396bbdcae1ee3da0a024478a3abe3d369",
+      nil,
+      %{
+        "genre" => Enum.random(@supported_genres) |> to_string(),
+        "tone" => Enum.random(@supported_tones) |> to_string(),
+        "audience" => Enum.random(@supported_audiences) |> to_string()
+      }
+    )
+
+    # {:ok, %{"title" => title}} = OpenAI.Response.create("pmpt_6865fdb4a37c8195b04c7b92e5b63b65041d983c23448361", nil, %{"description" => summary})
+  end
 
   # Server
 
   @impl true
   def init(opts) do
-    title_chunks = Keyword.fetch!(opts, :title_chunks)
-    summary_chunks = Keyword.fetch!(opts, :summary_chunks)
-    interval_ms = Keyword.fetch!(opts, :interval_ms)
     target_pid = Keyword.fetch!(opts, :target_pid)
     title = Keyword.fetch!(opts, :title)
     summary = Keyword.fetch!(opts, :summary)
 
     state = %__MODULE__{
-      title_chunks: title_chunks,
-      summary_chunks: summary_chunks,
-      interval_ms: interval_ms,
       target_pid: target_pid,
-      title_index: 0,
-      summary_index: 0,
       title: title,
-      summary: summary
+      summary: summary,
+      summary_deltas: [],
+      summary_acc: "",
+      title_deltas: [],
+      title_acc: "",
+      mode: :summary
     }
 
-    send(self(), :stream_next)
     {:ok, state}
   end
 
-
   @impl true
-  def handle_info(:stream_next, %__MODULE__{title_index: title_index, summary_index: summary_index, title_chunks: title_chunks, summary_chunks: summary_chunks} = state) do
-    title_done = title_index >= length(title_chunks)
-    summary_done = summary_index >= length(summary_chunks)
+  def handle_info(
+        {{:response, :completed},
+         %{"response" => %{"output" => [%{"content" => [%{"text" => json_content}]}]}}},
+        %{mode: :summary} = state
+      ) do
+    with {:ok, content} <- Jason.decode(json_content),
+         description <- content["description"] do
+      OpenAI.Response.stream(
+        self(),
+        "pmpt_6865fdb4a37c8195b04c7b92e5b63b65041d983c23448361",
+        nil,
+        %{"description" => description}
+      )
 
-    cond do
-      # If both are done, finish the stream
-      title_done and summary_done ->
-        send(state.target_pid, {:stream_done, {state.title, state.summary}})
+      {:noreply, %{state | mode: :title, summary: description}}
+    else
+      {:error, reason} ->
+        Logger.error("Error decoding JSON content: #{inspect(reason)}")
         {:stop, :normal, state}
-
-      # If title is not done, send next title chunk
-      not title_done ->
-        title_chunk = Enum.at(title_chunks, title_index)
-        send(state.target_pid, {:title_chunk, title_chunk})
-        Process.send_after(self(), :stream_next, state.interval_ms)
-        {:noreply, %{state | title_index: title_index + 1}}
-
-      # If summary is not done, send next summary chunk
-      not summary_done ->
-        summary_chunk = Enum.at(summary_chunks, summary_index)
-        send(state.target_pid, {:summary_chunk, summary_chunk})
-        Process.send_after(self(), :stream_next, state.interval_ms)
-        {:noreply, %{state | summary_index: summary_index + 1}}
     end
   end
 
-  defp chunk_content(content) do
-    content
-    |> String.split("\n")
-    |> Enum.map(&(&1 <> "\n"))
+  @impl true
+  def handle_info(
+        {{:response, :completed},
+         %{"response" => %{"output" => [%{"content" => [%{"text" => json_content}]}]}}},
+        %{mode: :title} = state
+      ) do
+    with {:ok, content} <- Jason.decode(json_content),
+         title <- content["title"] do
+      send(state.target_pid, {:stream_done, {title, state.summary}})
+      {:stop, :normal, state}
+    else
+      {:error, reason} ->
+        Logger.error("Error decoding JSON content: #{inspect(reason)}")
+        {:stop, :normal, state}
+    end
   end
 
-  defp generate_title(), do: MockContent.gibberish_name() <> MockContent.gibberish_name()
+  @impl true
+  def handle_info(
+        {{:response, :output_text, :delta}, %{} = delta},
+        state
+      ),
+      do: send_chunk(state, delta, delta["delta"])
 
-  defp generate_summary() do
-    for _ <- 1..Enum.random(5..10), into: "", do: MockContent.gibberish_sentence(2..10) <> "\n"
+  @impl true
+  def handle_info({{:response, event_type}, _payload}, state) do
+    IO.inspect(event_type, label: "Unhandled OpenAI Event Type")
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({{:response, event_type, event_subtype}, _payload}, state) do
+    IO.inspect(event_type, label: "Unhandled OpenAI Event Type")
+    IO.inspect(event_subtype, label: "Unhandled OpenAI Event Subtype")
+    {:noreply, state}
+  end
+
+  defp send_chunk(%{mode: :summary} = state, delta, content) do
+    acc = state.summary_acc
+    new_acc = acc <> content
+
+    if is_json_delta?("description", acc, new_acc) do
+      IO.inspect(content, label: "Sending summary chunk")
+      send(state.target_pid, {:summary_chunk, content})
+    else
+      IO.inspect(new_acc, label: "Ignoring delta")
+    end
+
+    {:noreply, %{state | summary_deltas: state.summary_deltas ++ [delta], summary_acc: new_acc}}
+  end
+
+  defp send_chunk(%{mode: :title} = state, delta, content) do
+    acc = state.title_acc
+    new_acc = acc <> content
+
+    if is_json_delta?("title", acc, new_acc) do
+      IO.inspect(content, label: "Sending title chunk")
+      send(state.target_pid, {:title_chunk, content})
+    else
+      IO.inspect(new_acc, label: "Ignoring delta")
+    end
+
+    {:noreply, %{state | title_deltas: state.title_deltas ++ [delta], title_acc: new_acc}}
+  end
+
+  defp is_json_delta?(key, acc, new_acc) do
+    # TODO: this is a hack to get the json delta to work
+    # introduce json parsing library similar to
+    # https://github.com/karminski/streaming-json-py
+    (String.starts_with?(acc, "{\"#{key}\":\"") or
+       String.starts_with?(acc, "{\"#{key}\": \"") or
+       String.starts_with?(acc, "{ \"#{key}\": \"") or
+       String.starts_with?(acc, "{ \"#{key}\":\"")) and
+      (not String.ends_with?(new_acc, "\"}") and
+         not String.ends_with?(new_acc, "\" }"))
   end
 end

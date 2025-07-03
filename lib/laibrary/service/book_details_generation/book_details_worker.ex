@@ -19,7 +19,7 @@ defmodule Laibrary.Service.BookDetailsWorker do
   defp stream_openai(liveview_pid, book_id) do
     case BookDetailsOrchestrator.start_link(%{book_id: book_id, liveview_pid: liveview_pid}) do
       {:ok, orchestrator_pid} ->
-        case OpenAiBookDetailsService.start_stream(100, orchestrator_pid) do
+        case OpenAiBookDetailsService.start_stream(orchestrator_pid) do
           {:ok, _stream_pid} ->
             {:ok, :stream_started}
           {:error, reason} -> {:error, reason}

@@ -3,8 +3,9 @@ import Dotenvy
 
 # Load `.env` for all environments (dev, test, prod)
 
-".env"
-|> source()
+Dotenvy.source!(".env")
+
+IO.inspect(env!("OPENAI_API_KEY"), label: "Boot-time OPENAI_API_KEY")
 
 # Start server in releases if PHX_SERVER is set
 if System.get_env("PHX_SERVER") do
@@ -19,6 +20,9 @@ database_url =
 secret_key_base =
   env!("SECRET_KEY_BASE") ||
     raise "environment variable SECRET_KEY_BASE is missing"
+
+config :laibrary,
+  openai_api_key: env!("OPENAI_API_KEY")
 
 config :laibrary, Laibrary.Repo,
   url: database_url,
@@ -35,10 +39,6 @@ config :ex_aws,
   access_key_id: env!("AWS_ACCESS_KEY_ID"),
   secret_access_key: env!("AWS_SECRET_ACCESS_KEY"),
   region: "us-west-2"
-
-config :openai_ex,
-  api_key: env!("OPENAI_API_KEY"),
-  organization_key: env!("OPENAI_ORGANIZATION_KEY")
 
 # Optional: prod-specific endpoint config
 if config_env() == :prod do
