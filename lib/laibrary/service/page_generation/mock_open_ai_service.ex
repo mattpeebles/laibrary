@@ -1,4 +1,4 @@
-defmodule Laibrary.Service.OpenAiService do
+defmodule Laibrary.Service.MockOpenAiService do
   use GenServer
 
   alias Laibrary.Service.MockContent

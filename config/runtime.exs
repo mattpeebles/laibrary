@@ -36,6 +36,10 @@ config :ex_aws,
   secret_access_key: env!("AWS_SECRET_ACCESS_KEY"),
   region: "us-west-2"
 
+config :openai_ex,
+  api_key: env!("OPENAI_API_KEY"),
+  organization_key: env!("OPENAI_ORGANIZATION_KEY")
+
 # Optional: prod-specific endpoint config
 if config_env() == :prod do
   host = env!("PHX_HOST") || "example.com"

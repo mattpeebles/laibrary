@@ -3,6 +3,9 @@ defmodule Laibrary.Book do
   alias Laibrary.Repo
   alias Laibrary.Book.BookSchema
   alias Laibrary.Page
+  alias Laibrary.Service.OpenAI
+  alias OpenaiEx.Responses
+  alias Laibrary.StreamSupervisor
 
   def get_book_for_view(book_id, liveview_pid \\ self()) do
     book = case get_book(book_id) do
@@ -23,9 +26,13 @@ defmodule Laibrary.Book do
     if book.title != nil and book.summary != nil do
       {:static, Map.put(book_details, :title, book.title) |> Map.put(:summary, book.summary)}
     else
-      Laibrary.StreamSupervisor.start_book_details_worker(%{book_id: book_id, liveview_pid: liveview_pid})
+      start_book_details_stream(book_id, liveview_pid)
       {:streaming, Map.put(book_details, :title, "") |> Map.put(:summary, "")}
     end
+  end
+
+  def start_book_details_stream(book_id, liveview_pid) do
+    StreamSupervisor.start_book_details_worker(%{book_id: book_id, liveview_pid: liveview_pid})
   end
 
   def get_all_books_for_shelf(shelf_id) do
@@ -42,6 +49,7 @@ defmodule Laibrary.Book do
     |> Repo.insert()
   end
 
+  @spec get_book(any()) :: any()
   def get_book(book_id) do
     Repo.get(BookSchema, book_id)
   end

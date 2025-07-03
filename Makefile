@@ -16,3 +16,9 @@ run:
 .PHONY: test
 test:
 	@mix test
+
+.PHONY: clean_mix
+clean:
+	@mix deps.clean --all
+	@mix deps.get
+	@mix compile --force

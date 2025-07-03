@@ -61,7 +61,8 @@ defmodule Laibrary.MixProject do
       {:dotenvy, "~> 0.8.0"},
       {:ex_aws, "~> 2.1"},
       {:ex_aws_s3, "~> 2.0"},
-      {:req, "~> 0.5.10"}
+      {:req, "~> 0.5.10"},
+      {:kino, "~> 0.15.3"}
     ]
   end
 

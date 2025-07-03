@@ -6,6 +6,7 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
   use GenServer
 
   alias Laibrary.Service.MockContent
+  alias Laibrary.Service.OpenAI
 
   defstruct [:title_chunks, :summary_chunks, :interval_ms, :target_pid, :title_index, :summary_index, :title, :summary]
 
@@ -20,20 +21,22 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
           summary: String.t()
         }
 
-  # API
-
-  def start_link(opts) do
-    title = generate_title()
-    summary = generate_summary()
-    title_chunks = chunk_content(title)
-    summary_chunks = chunk_content(summary)
-    opts = opts ++ [title_chunks: title_chunks, summary_chunks: summary_chunks, title: title, summary: summary]
-    GenServer.start_link(__MODULE__, opts, name: opts[:name] || :via_tuple_or_nil)
-  end
+  @supported_genres [:fantasy, :mystery, :romance, :thriller, :sci_fi, :historical, :contemporary, :horror, :adventure, :literary]
+  @supported_audiences [:children, :young_adult, :adults, :all_ages]
+  @supported_tones [:dark, :light, :humorous, :serious, :mysterious, :romantic, :adventurous, :melancholic, :uplifting, :suspenseful]
 
   def start_stream(interval_ms, target_pid \\ self(), name \\ nil) do
-    title = generate_title()
-    summary = generate_summary()
+    {:ok, %{"description" => summary}} = OpenAI.Response.create("pmpt_6865cdab3170819396bbdcae1ee3da0a024478a3abe3d369",
+    nil,
+    %{
+      "genre" => Enum.random(@supported_genres) |> to_string(),
+      "tone" => Enum.random(@supported_tones) |> to_string(),
+      "audience" => Enum.random(@supported_audiences) |> to_string()
+
+    })
+    {:ok, %{"title" => title}} = OpenAI.Response.create("pmpt_6865fdb4a37c8195b04c7b92e5b63b65041d983c23448361", nil, %{"description" => summary})
+    IO.inspect(title, label: "Title", pretty: true)
+    IO.inspect(summary, label: "Summary", pretty: true)
     title_chunks = chunk_content(title)
     summary_chunks = chunk_content(summary)
 

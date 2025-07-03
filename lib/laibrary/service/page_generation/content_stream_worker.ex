@@ -2,7 +2,7 @@ defmodule Laibrary.Service.ContentStreamWorker do
   use GenServer
 
   alias Laibrary.Service.PageContentOrchestrator
-  alias Laibrary.Service.OpenAiService
+  alias Laibrary.Service.MockOpenAiService
 
   def start_link(%{page_id: page_id, book_id: book_id, liveview_pid: liveview_pid, prompt: prompt}) do
     name = via(page_id)
@@ -20,7 +20,7 @@ defmodule Laibrary.Service.ContentStreamWorker do
   defp stream_openai(liveview_pid, page_id, book_id, _prompt) do
     case PageContentOrchestrator.start_link(%{page_id: page_id, liveview_pid: liveview_pid, book_id: book_id}) do
       {:ok, orchestrator_pid} ->
-        case OpenAiService.start_stream(100, orchestrator_pid) do
+        case MockOpenAiService.start_stream(100, orchestrator_pid) do
           {:ok, _stream_pid} ->
             {:ok, :stream_started}
           {:error, reason} ->
