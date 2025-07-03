@@ -9,13 +9,14 @@ defmodule Laibrary.Book.BookSchema do
     field :shelf_id, :binary_id
     field :x, :integer
     field :summary, :string
+    field :outline, :map
 
     timestamps()
   end
 
   def changeset(book, attrs) do
     book
-    |> cast(attrs, [:title, :summary, :shelf_id, :x])
+    |> cast(attrs, [:title, :summary, :outline, :shelf_id, :x])
     |> validate_required([:shelf_id, :x])
   end
 end

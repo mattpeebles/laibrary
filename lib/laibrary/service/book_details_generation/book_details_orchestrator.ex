@@ -28,9 +28,9 @@ defmodule Laibrary.Service.BookDetailsOrchestrator do
   end
 
   def handle_info({:stream_done, response}, state) do
-    {title, summary} = response # TODO: this is gross, fix it
+    {title, summary, outline} = response
     book_id = state.book_id
-    with {:ok, _} <- Book.finalize_book(book_id, title, summary) do # TODO: this is gross, fix it
+    with {:ok, _} <- Book.finalize_book(book_id, title, summary, outline) do
       send(state.liveview_pid, {:stream_done, {title, summary}})
       {:stop, :normal, state}
     else

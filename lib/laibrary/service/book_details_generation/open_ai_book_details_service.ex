@@ -16,7 +16,10 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
     :summary_acc,
     :title_deltas,
     :title_acc,
-    :mode
+    :mode,
+    :genre,
+    :tone,
+    :audience
   ]
 
   @type state :: %__MODULE__{
@@ -27,7 +30,10 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
           summary_acc: String.t(),
           title_acc: String.t(),
           title_deltas: [%{}],
-          mode: :title | :summary
+          mode: :title | :summary,
+          genre: String.t(),
+          tone: String.t(),
+          audience: String.t()
         }
 
   @supported_genres [
@@ -63,7 +69,10 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
       summary: "",
       summary_deltas: [],
       summary_acc: "",
-      mode: :summary
+      mode: :summary,
+      genre: Enum.random(@supported_genres) |> to_string(),
+      tone: Enum.random(@supported_tones) |> to_string(),
+      audience: Enum.random(@supported_audiences) |> to_string()
     ]
 
     {:ok, summary_stream_pid} = GenServer.start_link(__MODULE__, opts)
@@ -73,13 +82,27 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
       "pmpt_6865cdab3170819396bbdcae1ee3da0a024478a3abe3d369",
       nil,
       %{
-        "genre" => Enum.random(@supported_genres) |> to_string(),
-        "tone" => Enum.random(@supported_tones) |> to_string(),
-        "audience" => Enum.random(@supported_audiences) |> to_string()
+        "genre" => opts[:genre],
+        "tone" => opts[:tone],
+        "audience" => opts[:audience]
       }
     )
+  end
 
-    # {:ok, %{"title" => title}} = OpenAI.Response.create("pmpt_6865fdb4a37c8195b04c7b92e5b63b65041d983c23448361", nil, %{"description" => summary})
+  defp generate_outline(state) do
+    OpenAI.Response.create(
+      "pmpt_6866e6ef5c6c819798aaa419349c3d3a07faad848ae9a056",
+      nil,
+      %{
+        "genre" => state.genre,
+        "tone" => state.tone,
+        "audience" => state.audience,
+        "title" => state.title,
+        "description" => state.summary
+      },
+      true,
+      :infinity # TODO: this is a poor UX, we should have a timeout
+    )
   end
 
   # Server
@@ -98,7 +121,10 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
       summary_acc: "",
       title_deltas: [],
       title_acc: "",
-      mode: :summary
+      mode: :summary,
+      genre: Keyword.fetch!(opts, :genre),
+      tone: Keyword.fetch!(opts, :tone),
+      audience: Keyword.fetch!(opts, :audience)
     }
 
     {:ok, state}
@@ -135,7 +161,9 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
       ) do
     with {:ok, content} <- Jason.decode(json_content),
          title <- content["title"] do
-      send(state.target_pid, {:stream_done, {title, state.summary}})
+      {:ok, outline} = generate_outline(state)
+      IO.inspect(outline, label: "Outline")
+      send(state.target_pid, {:stream_done, {title, state.summary, outline}})
       {:stop, :normal, state}
     else
       {:error, reason} ->

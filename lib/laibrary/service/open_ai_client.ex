@@ -1,7 +1,7 @@
 defmodule Laibrary.Service.OpenAI do
   alias __MODULE__.EventParser
 
-  def api_key, do: Application.get_env(:laibrary, :openai_api_key) |> IO.inspect(label: "API Key")
+  def api_key, do: Application.get_env(:laibrary, :openai_api_key)
 
   def auth_header, do: {"Authorization", "Bearer #{api_key()}"}
 
@@ -62,7 +62,8 @@ defmodule Laibrary.Service.OpenAI do
       prompt_id,
       prompt_version \\ nil,
       variables \\ %{},
-      store \\ true
+      store \\ true,
+      timeout_ms \\ 1_500
     ) do
       body = %{
         "prompt" => %{
@@ -78,7 +79,7 @@ defmodule Laibrary.Service.OpenAI do
         {"Content-Type", "application/json"}
       ]
 
-      case Req.post(url: @base_url, headers: headers, json: body) do
+      case Req.post(url: @base_url, headers: headers, json: body, receive_timeout: timeout_ms) do
         {:ok, %{status: 200, body: %{"output" => [%{"content" => [%{"text" => json_str}]}]}}} ->
           case Jason.decode(json_str) do
             {:ok, decoded} -> {:ok, decoded}
@@ -115,7 +116,6 @@ defmodule Laibrary.Service.OpenAI do
         {"Accept", "text/event-stream"}
       ]
 
-      IO.inspect(headers, label: "Headers")
       Req.post(
         url: @base_url,
         headers: headers,

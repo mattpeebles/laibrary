@@ -54,8 +54,8 @@ defmodule Laibrary.Book do
     Repo.get(BookSchema, book_id)
   end
 
-  def finalize_book(book_id, title, summary) do
+  def finalize_book(book_id, title, summary, outline) do
     book = Repo.get!(BookSchema, book_id)
-    Repo.update(BookSchema.changeset(book, %{title: title, summary: summary}))
+    Repo.update(BookSchema.changeset(book, %{title: title, summary: summary, outline: outline}))
   end
 end
