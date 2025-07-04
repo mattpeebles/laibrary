@@ -61,11 +61,11 @@ defmodule LaibraryWeb.Book.Page do
 
 
 
-    <div class="whitespace-pre-line flex-grow flex flex-col overflow-y-scroll">
+    <div class="whitespace-pre-line flex-grow flex flex-col">
       <%= raw(String.replace(@content, "\n", "<br>")) %>
     </div>
 
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-between items-center mt-6 mb-6 pb-10">
       <%= if @previous_page_id do %>
         <.link navigate={~p"/book/#{@book_id}/page/#{@previous_page_id}"} class="w-full text-left">
           Previous Page
