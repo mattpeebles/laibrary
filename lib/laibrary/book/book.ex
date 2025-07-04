@@ -22,9 +22,11 @@ defmodule Laibrary.Book do
     }
 
     if book.title != nil and book.summary != nil do
+      send(liveview_pid, {:ready_to_be_read})
       {:static, Map.put(book_details, :title, book.title) |> Map.put(:summary, book.summary)}
     else
       start_book_details_stream(book_id, liveview_pid)
+      send(liveview_pid, {:loading, 0})
       {:streaming, Map.put(book_details, :title, "") |> Map.put(:summary, "")}
     end
   end

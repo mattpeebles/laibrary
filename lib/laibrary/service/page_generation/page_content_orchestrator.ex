@@ -41,7 +41,7 @@ defmodule Laibrary.Service.PageContentOrchestrator do
     |> ExAws.request()
     |> case do
       {:ok, _} -> :ok
-      err -> {:error, err} |> IO.inspect(label: "Upload to S3 failed")
+      err -> {:error, err} |> Logger.error("Upload to S3 failed")
     end
     :ok
   end

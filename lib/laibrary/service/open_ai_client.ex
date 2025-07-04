@@ -33,7 +33,8 @@ defmodule Laibrary.Service.OpenAI do
             |> List.to_tuple()
             |> then(&{:ok, &1})
 
-          _ -> :error
+          _ ->
+            :error
         end
 
       payload =
@@ -48,7 +49,6 @@ defmodule Laibrary.Service.OpenAI do
           send(target_pid, {type, decoded})
 
         _ ->
-          IO.inspect(block, label: "NOOP: Unparsable OpenAI Block")
           :noop
       end
     end
@@ -57,12 +57,12 @@ defmodule Laibrary.Service.OpenAI do
   defmodule Response do
     @base_url "https://api.openai.com/v1/responses"
     def create(
-      prompt_id,
-      prompt_version \\ nil,
-      variables \\ %{},
-      store \\ true,
-      timeout_ms \\ 1_500
-    ) do
+          prompt_id,
+          prompt_version \\ nil,
+          variables \\ %{},
+          store \\ true,
+          timeout_ms \\ 1_500
+        ) do
       body = %{
         "prompt" => %{
           "id" => prompt_id,
@@ -83,6 +83,7 @@ defmodule Laibrary.Service.OpenAI do
             {:ok, decoded} -> {:ok, decoded}
             err -> err
           end
+
         {:ok, %{status: code, body: body}} ->
           {:error, {code, body}}
 
@@ -92,12 +93,12 @@ defmodule Laibrary.Service.OpenAI do
     end
 
     def stream(
-      pid,
-      prompt_id,
-      prompt_version \\ nil,
-      variables \\ %{},
-      store \\ true
-    ) do
+          pid,
+          prompt_id,
+          prompt_version \\ nil,
+          variables \\ %{},
+          store \\ true
+        ) do
       body = %{
         "prompt" => %{
           "id" => prompt_id,
@@ -119,7 +120,6 @@ defmodule Laibrary.Service.OpenAI do
         headers: headers,
         json: body,
         into: fn chunk, acc ->
-          IO.inspect(chunk, label: "OpenAI Chunk")
           send(pid, {:openai_chunk, chunk})
           {:cont, acc}
         end
@@ -127,7 +127,6 @@ defmodule Laibrary.Service.OpenAI do
     end
   end
 end
-
 
 defmodule SSEParser do
   defstruct buffer: "", target_pid: nil
@@ -163,8 +162,6 @@ defmodule SSEParser do
     with {:ok, event} <- extract_event(lines),
          {:ok, payload} <- extract_data(lines) do
       send(pid, {event, payload})
-    else
-      _ -> IO.inspect(block, label: "NOOP: Unparsable OpenAI Block")
     end
   end
 
@@ -177,7 +174,8 @@ defmodule SSEParser do
         |> Enum.map(&String.to_atom/1)
         |> then(&{:ok, List.to_tuple(&1)})
 
-      _ -> :error
+      _ ->
+        :error
     end
   end
 
@@ -188,7 +186,8 @@ defmodule SSEParser do
         |> String.trim()
         |> Jason.decode()
 
-      _ -> :error
+      _ ->
+        :error
     end
   end
 end

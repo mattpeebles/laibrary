@@ -1,8 +1,19 @@
 defmodule LaibraryWeb.Book.Cover do
   use LaibraryWeb, :live_view
 
+  @thinking_thoughts ["Thinking...",
+  "Pondering...",
+  "Reflecting...",
+  "Brainstorming...",
+  "Generating book details..."
+]
+
   defp assign_base(socket, book_details) do
-    assign(socket, Map.take(book_details, [:book_id, :shelf_id, :first_page_id, :title, :summary]))
+    assign(socket,
+      Map.take(book_details, [:book_id, :shelf_id, :first_page_id, :title, :summary])
+      |> Map.put(:ready_to_be_read, false)
+      |> Map.put(:generating_book_details, "")
+    )
   end
 
   def mount(%{"book_id" => book_id}, _session, socket) do
@@ -24,7 +35,30 @@ defmodule LaibraryWeb.Book.Cover do
   end
 
   def handle_info({:stream_done, {title, summary}}, socket) do
+    send(self(), {:ready_to_be_read})
     {:noreply, assign(socket, title: title, summary: summary)}
+  end
+
+  def handle_info({:loading, thought}, socket) do
+    :timer.send_after(125, {:loading, thought, 0})
+    {:noreply, socket}
+  end
+
+  def handle_info({:loading, thought, idx}, socket) do
+    if socket.assigns.ready_to_be_read do
+      {:noreply, socket}
+    else
+
+    content = Enum.at(@thinking_thoughts, thought) |> String.split("")
+    curr_idx = rem(idx, length(content))
+    next_thought = if curr_idx == length(content) - 1, do: rem(thought + 1, length(@thinking_thoughts)), else: thought
+    :timer.send_after(125, {:loading, next_thought, curr_idx + 1})
+    {:noreply, assign(socket, generating_book_details: Enum.take(content, curr_idx + 1))}
+    end
+  end
+
+  def handle_info({:ready_to_be_read}, socket) do
+    {:noreply, assign(socket, ready_to_be_read: true)}
   end
 
   def render(assigns) do
@@ -39,9 +73,13 @@ defmodule LaibraryWeb.Book.Cover do
       <%= @summary %>
     </div>
 
-    <.link navigate={~p"/book/#{@book_id}/page/#{@first_page_id}"}>
-      Start Reading
-    </.link>
+    <%= if @ready_to_be_read do %>
+      <.link navigate={~p"/book/#{@book_id}/page/#{@first_page_id}"}>
+        Start Reading
+      </.link>
+    <% else %>
+      {@generating_book_details}
+    <% end %>
     """
   end
 end

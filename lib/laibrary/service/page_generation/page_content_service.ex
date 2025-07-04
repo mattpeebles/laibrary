@@ -123,7 +123,6 @@ defmodule Laibrary.Service.OpenAiPageContentService do
          %{"response" => %{"output" => [%{"content" => [%{"text" => json_content}]}]}}},
         state
       ) do
-    IO.inspect(json_content, label: "JSON Content")
 
     with {:ok, content} <- Jason.decode(json_content),
          page_content <- content["page_content"],
@@ -146,17 +145,12 @@ defmodule Laibrary.Service.OpenAiPageContentService do
       do: send_chunk(state, delta, delta["delta"])
 
   @impl true
-  def handle_info({{:response, event_type}, payload}, state) do
-    IO.inspect(event_type, label: "Unhandled OpenAI Event Type")
-    IO.inspect(payload, label: "Unhandled OpenAI Event Payload")
+  def handle_info({{:response, _event_type}, _payload}, state) do
     {:noreply, state}
   end
 
   @impl true
-  def handle_info({{:response, event_type, event_subtype}, payload}, state) do
-    IO.inspect(event_type, label: "Unhandled OpenAI Event Type")
-    IO.inspect(event_subtype, label: "Unhandled OpenAI Event Subtype")
-    IO.inspect(payload, label: "Unhandled OpenAI Event Payload")
+  def handle_info({{:response, _event_type, _event_subtype}, _payload}, state) do
     {:noreply, state}
   end
 
@@ -167,15 +161,13 @@ defmodule Laibrary.Service.OpenAiPageContentService do
 
   @impl true
   def handle_info({:DOWN, _ref, :process, _pid, _reason}, %{done?: true} = state) do
-    # Clean exit: we received all messages and task ended
-    Logger.info("Stream task completed")
     {:stop, :normal, state}
   end
 
   @impl true
   def handle_info({:DOWN, _ref, :process, _pid, reason}, state) do
     # Task ended too early
-    Logger.warning("Stream task exited before completion; waiting for completion... #{inspect(reason)}")
+    # Logger.warning("Stream task exited before completion; waiting for completion... #{inspect(reason)}")
     {:noreply, %{state | stream_task_ref: nil}}
   end
 
@@ -185,10 +177,9 @@ defmodule Laibrary.Service.OpenAiPageContentService do
     new_acc = acc <> content
 
     if is_json_delta?("page_content", acc, new_acc) do
-      IO.inspect(content, label: "Sending page content chunk")
       send(state.target_pid, {:page_content_chunk, content})
-    else
-      IO.inspect(new_acc, label: "Ignoring delta")
+    # else
+      # IO.inspect(new_acc, label: "Ignoring delta")
     end
 
     {:noreply, %{state | page_deltas: state.page_deltas ++ [delta], page_acc: new_acc}}
@@ -198,17 +189,13 @@ defmodule Laibrary.Service.OpenAiPageContentService do
     # TODO: this is a hack to get the json delta to work
     # introduce json parsing library similar to
     # https://github.com/karminski/streaming-json-py
-    (String.starts_with?(acc, "{\"#{key}\":\"") or
-       String.starts_with?(acc, "{\"#{key}\": \"") or
-       String.starts_with?(acc, "{ \"#{key}\": \"") or
-       String.starts_with?(acc, "{ \"#{key}\":\"")) and
-      (not String.ends_with?(new_acc, "\"}") and
-         not String.ends_with?(new_acc, "\" }"))
+    Regex.match?(~r/^\{\s*"?#{key}"?\s*:\s*"/, acc) and not Regex.match?(~r/"\s*}$/, new_acc)
   end
 
   @impl true
   def terminate(reason, _state) do
-    IO.inspect(reason, label: "PageContentService Terminated")
+    Logger.info(reason, label: "PageContentService Terminated")
+    # IO.inspect(reason, label: "PageContentService Terminated")
     :ok
   end
 

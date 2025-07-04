@@ -26,8 +26,8 @@ defmodule Laibrary.Page do
         start_streaming_content(page_id, page.book_id, liveview_pid)
         {:streaming, Map.put(page_info, :content, "")}
 
-      {:ok, content} ->
-        {:static, Map.put(page_info, :content, content)}
+        {:ok, content} ->
+          {:static, Map.put(page_info, :content, content)}
 
       {:error, reason} ->
         {:error, Map.put(page_info, :content, "Unable to fetch page content: #{reason}")}

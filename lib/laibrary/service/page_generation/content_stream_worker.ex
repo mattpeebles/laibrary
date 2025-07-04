@@ -48,7 +48,7 @@ defmodule Laibrary.Service.ContentStreamWorker do
 
   @impl true
   def handle_info({:DOWN, _ref, :process, _pid, reason}, state) do
-    IO.inspect(reason, label: "[Orchestrator DIED]")
+    # IO.inspect(reason, label: "[Orchestrator DIED]")
     {:stop, reason, state}
   end
 
@@ -64,7 +64,7 @@ defmodule Laibrary.Service.ContentStreamWorker do
 
         case OpenAiPageContentService.start_stream(orchestrator_pid, book_id, page_id) do
           {:ok, _stream_pid} ->
-            IO.inspect(orchestrator_pid, label: "Orchestrator PID (monitored)")
+            # IO.inspect(orchestrator_pid, label: "Orchestrator PID (monitored)")
             {:ok, :stream_started}
 
           {:error, reason} ->
@@ -77,8 +77,8 @@ defmodule Laibrary.Service.ContentStreamWorker do
   end
 
 @impl true
-def terminate(reason, _state) do
-  IO.inspect(reason, label: "[ContentStreamWorker Terminating]")
+def terminate(_reason, _state) do
+  # Logger.info(reason, label: "[ContentStreamWorker Terminating]")
   :ok
 end
 

@@ -103,7 +103,8 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
         "description" => state.summary
       },
       true,
-      :infinity # TODO: this is a poor UX, we should have a timeout
+      # TODO: this is a poor UX, we should have a timeout
+      :infinity
     )
   end
 
@@ -171,7 +172,6 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
     with {:ok, content} <- Jason.decode(json_content),
          title <- content["title"] do
       {:ok, outline} = generate_outline(state)
-      IO.inspect(outline, label: "Outline")
       send(state.target_pid, {:stream_done, {title, state.summary, outline}})
       {:stop, :normal, state}
     else
@@ -189,15 +189,12 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
       do: send_chunk(state, delta, delta["delta"])
 
   @impl true
-  def handle_info({{:response, event_type}, _payload}, state) do
-    IO.inspect(event_type, label: "Unhandled OpenAI Event Type")
+  def handle_info({{:response, _event_type}, _payload}, state) do
     {:noreply, state}
   end
 
   @impl true
-  def handle_info({{:response, event_type, event_subtype}, _payload}, state) do
-    IO.inspect(event_type, label: "Unhandled OpenAI Event Type")
-    IO.inspect(event_subtype, label: "Unhandled OpenAI Event Subtype")
+  def handle_info({{:response, _event_type, _event_subtype}, _payload}, state) do
     {:noreply, state}
   end
 
@@ -206,10 +203,9 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
     new_acc = acc <> content
 
     if is_json_delta?("description", acc, new_acc) do
-      IO.inspect(content, label: "Sending summary chunk")
       send(state.target_pid, {:summary_chunk, content})
-    else
-      IO.inspect(new_acc, label: "Ignoring delta")
+      # else
+      #   IO.inspect(new_acc, label: "Ignoring delta")
     end
 
     {:noreply, %{state | summary_deltas: state.summary_deltas ++ [delta], summary_acc: new_acc}}
@@ -220,10 +216,9 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
     new_acc = acc <> content
 
     if is_json_delta?("title", acc, new_acc) do
-      IO.inspect(content, label: "Sending title chunk")
       send(state.target_pid, {:title_chunk, content})
-    else
-      IO.inspect(new_acc, label: "Ignoring delta")
+      # else
+      # IO.inspect(new_acc, label: "Ignoring delta")
     end
 
     {:noreply, %{state | title_deltas: state.title_deltas ++ [delta], title_acc: new_acc}}
@@ -233,11 +228,6 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
     # TODO: this is a hack to get the json delta to work
     # introduce json parsing library similar to
     # https://github.com/karminski/streaming-json-py
-    (String.starts_with?(acc, "{\"#{key}\":\"") or
-       String.starts_with?(acc, "{\"#{key}\": \"") or
-       String.starts_with?(acc, "{ \"#{key}\": \"") or
-       String.starts_with?(acc, "{ \"#{key}\":\"")) and
-      (not String.ends_with?(new_acc, "\"}") and
-         not String.ends_with?(new_acc, "\" }"))
+    Regex.match?(~r/^\{\s*"?#{key}"?\s*:\s*"/, acc) and not Regex.match?(~r/"\s*}$/, new_acc)
   end
 end
