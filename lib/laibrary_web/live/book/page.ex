@@ -11,7 +11,8 @@ defmodule LaibraryWeb.Book.Page do
         :next_page_id,
         :page_number,
         :previous_page_id,
-        :content
+        :content,
+        :book_title
       ])
     )
   end
@@ -50,35 +51,42 @@ defmodule LaibraryWeb.Book.Page do
 
   def render(assigns) do
     ~H"""
-    <.link navigate={~p"/book/#{@book_id}"}>
-      Back to Book
-    </.link>
+    <div class="flex justify-between items-center mb-6">
+      <.link navigate={~p"/book/#{@book_id}"}>
+        Back to Book
+      </.link>
+      <h3 class="text-gl font-bold">
+        {@book_title}
+      </h3>
+    </div>
 
-    <div class="whitespace-pre-line">
+
+
+    <div class="whitespace-pre-line flex-grow flex flex-col">
       <%= raw(String.replace(@content, "\n", "<br>")) %>
     </div>
 
     <div class="flex justify-between items-center mb-6">
       <%= if @previous_page_id do %>
-        <.link navigate={~p"/book/#{@book_id}/page/#{@previous_page_id}"}>
+        <.link navigate={~p"/book/#{@book_id}/page/#{@previous_page_id}"} class="w-full text-left">
           Previous Page
         </.link>
       <% else %>
-        <.link navigate={~p"/book/#{@book_id}"}>
+        <.link navigate={~p"/book/#{@book_id}"} class="w-full text-left">
           Previous Page
         </.link>
       <% end %>
 
-      <div>
+      <div class="w-full text-center">
         {@page_number}
       </div>
 
       <%= if @next_page_id do %>
-        <.link navigate={~p"/book/#{@book_id}/page/#{@next_page_id}"}>
+        <.link navigate={~p"/book/#{@book_id}/page/#{@next_page_id}"} class="w-full text-right">
           Next Page
         </.link>
       <% else %>
-        <div></div>
+        <div class="w-full"></div>
       <% end %>
     </div>
     """

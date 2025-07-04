@@ -2,6 +2,7 @@ defmodule Laibrary.Page do
   import Ecto.Query
   alias Laibrary.Repo
   alias Laibrary.Book.PageSchema
+  alias Laibrary.Book
 
   def load_page_for_view(page_id, liveview_pid \\ self()) do
     page =
@@ -13,12 +14,15 @@ defmodule Laibrary.Page do
           page
       end
 
+    book = Book.get_book(page.book_id)
+
     page_info = %{
       book_id: page.book_id,
       page_id: page_id,
       next_page_id: page.next_page_id,
       page_number: page.page_number,
-      previous_page_id: page.previous_page_id
+      previous_page_id: page.previous_page_id,
+      book_title: book.title
     }
 
     case get_page_content(page) do
