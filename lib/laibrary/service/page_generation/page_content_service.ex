@@ -31,7 +31,7 @@ defmodule Laibrary.Service.OpenAiPageContentService do
           done?: boolean(),
           stream_task_ref: reference(),
           sse_parser: SSEParser.t(),
-          previous_page: Page.t()
+          previous_page: Page.t() | nil
         }
 
   def start_link(opts) do
@@ -41,7 +41,7 @@ defmodule Laibrary.Service.OpenAiPageContentService do
   def start_stream(target_pid \\ self(), book_id, page_id) do
     book = Book.get_book(book_id)
     page = Page.get_page(page_id)
-    previous_page = Page.get_page(page.previous_page_id)
+    previous_page = if page.previous_page_id, do: Page.get_page(page.previous_page_id), else: nil
 
     opts = [
       target_pid: target_pid,
@@ -75,7 +75,12 @@ defmodule Laibrary.Service.OpenAiPageContentService do
   def handle_continue(:start_stream, state) do
     id = self()
 
-    {:ok, previous_page_content} = Page.get_page_content(state.previous_page)
+    previous_page_content = if state.previous_page do
+      {:ok, previous_page_content} = Page.get_page_content(state.previous_page)
+      previous_page_content
+    else
+      "This is the first page"
+    end
 
     {:ok, pid} =
       Task.start_link(fn ->
