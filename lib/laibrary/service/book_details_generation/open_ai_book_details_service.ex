@@ -19,7 +19,8 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
     :mode,
     :genre,
     :tone,
-    :audience
+    :audience,
+    :sse_parser
   ]
 
   @type state :: %__MODULE__{
@@ -33,7 +34,8 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
           mode: :title | :summary,
           genre: String.t(),
           tone: String.t(),
-          audience: String.t()
+          audience: String.t(),
+          sse_parser: SSEParser.t()
         }
 
   @supported_genres [
@@ -124,7 +126,8 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
       mode: :summary,
       genre: Keyword.fetch!(opts, :genre),
       tone: Keyword.fetch!(opts, :tone),
-      audience: Keyword.fetch!(opts, :audience)
+      audience: Keyword.fetch!(opts, :audience),
+      sse_parser: %SSEParser{target_pid: self()}
     }
 
     {:ok, state}
@@ -132,8 +135,8 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
 
   @impl true
   def handle_info({:openai_chunk, chunk}, state) do
-    OpenAI.EventParser.parse_chunk(chunk, self())
-    {:noreply, state}
+    new_parser = SSEParser.feed(state.sse_parser, chunk)
+    {:noreply, %{state | sse_parser: new_parser}}
   end
 
   @impl true
