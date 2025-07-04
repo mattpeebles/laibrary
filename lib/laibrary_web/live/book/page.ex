@@ -35,13 +35,18 @@ defmodule LaibraryWeb.Book.Page do
     end
   end
 
-  def handle_info({:stream_chunk, chunk}, socket) do
-    {:noreply, update(socket, :content, &((&1 || "") <> chunk))}
+  def handle_info({:page_content_chunk, chunk}, socket) do
+    new_content = (&((&1 || "") <> chunk)).(socket.assigns.content)
+    cleaned_content = String.replace(new_content, "\\n", "\n")
+    {:noreply, assign(socket, :content, cleaned_content)}
   end
 
-  def handle_info({:stream_done, %PageSchema{} = finalized_page}, socket) do
-    {:noreply, update(socket, :next_page_id, fn _ -> finalized_page.next_page_id end)}
-  end
+  def handle_info({:stream_done, {%PageSchema{} = finalized_page, content}}, socket) do
+    {:noreply,
+    socket
+    |> assign(:next_page_id, finalized_page.next_page_id)
+    |> assign(:content, content)}
+     end
 
   def render(assigns) do
     ~H"""
@@ -49,8 +54,8 @@ defmodule LaibraryWeb.Book.Page do
       Back to Book
     </.link>
 
-    <div style="white-space: pre-wrap;">
-      {@content}
+    <div class="whitespace-pre-line">
+      <%= raw(String.replace(@content, "\n", "<br>")) %>
     </div>
 
     <div class="flex justify-between items-center mb-6">

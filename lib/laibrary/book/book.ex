@@ -49,7 +49,6 @@ defmodule Laibrary.Book do
     |> Repo.insert()
   end
 
-  @spec get_book(any()) :: any()
   def get_book(book_id) do
     Repo.get(BookSchema, book_id)
   end

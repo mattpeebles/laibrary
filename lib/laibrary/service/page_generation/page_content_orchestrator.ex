@@ -17,8 +17,8 @@ defmodule Laibrary.Service.PageContentOrchestrator do
 
 
   @impl true
-  def handle_info({:stream_chunk, chunk}, state) do
-    send(state.liveview_pid, {:stream_chunk, chunk})
+  def handle_info({:page_content_chunk, chunk}, state) do
+    send(state.liveview_pid, {:page_content_chunk, chunk})
     {:noreply, state}
   end
 
@@ -27,7 +27,7 @@ defmodule Laibrary.Service.PageContentOrchestrator do
     {content, is_final} = response # TODO: this is gross, fix it
     with :ok <- upload_to_s3(s3_key, content),
          {:ok, finalized_page} <- Page.finalize_page(page_id, s3_key, is_final) do
-      send(state.liveview_pid, {:stream_done, finalized_page})
+      send(state.liveview_pid, {:stream_done, {finalized_page, content}})
       {:stop, :normal, state}
     else
       err ->
@@ -41,7 +41,7 @@ defmodule Laibrary.Service.PageContentOrchestrator do
     |> ExAws.request()
     |> case do
       {:ok, _} -> :ok
-      err -> {:error, err}
+      err -> {:error, err} |> IO.inspect(label: "Upload to S3 failed")
     end
     :ok
   end
