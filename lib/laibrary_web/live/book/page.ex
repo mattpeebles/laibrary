@@ -51,18 +51,17 @@ defmodule LaibraryWeb.Book.Page do
 
   def render(assigns) do
     ~H"""
-    <div class="flex justify-between items-center mb-6">
-      <.link navigate={~p"/book/#{@book_id}"}>
-        Back to Book
-      </.link>
+    <div class="flex justify-center items-center mb-6 w-full">
       <h3 class="text-gl font-bold">
-        {@book_title}
+        <.link navigate={~p"/book/#{@book_id}"} class="hover:underline">
+          {@book_title}
+        </.link>
       </h3>
     </div>
 
 
 
-    <div class="whitespace-pre-line flex-grow flex flex-col">
+    <div class="whitespace-pre-line flex-grow flex flex-col overflow-y-scroll">
       <%= raw(String.replace(@content, "\n", "<br>")) %>
     </div>
 
