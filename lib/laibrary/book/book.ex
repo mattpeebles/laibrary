@@ -3,8 +3,6 @@ defmodule Laibrary.Book do
   alias Laibrary.Repo
   alias Laibrary.Book.BookSchema
   alias Laibrary.Page
-  alias Laibrary.Service.OpenAI
-  alias OpenaiEx.Responses
   alias Laibrary.StreamSupervisor
 
   def get_book_for_view(book_id, liveview_pid \\ self()) do

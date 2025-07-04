@@ -2,9 +2,6 @@ defmodule Laibrary.Page do
   import Ecto.Query
   alias Laibrary.Repo
   alias Laibrary.Book.PageSchema
-  alias Laibrary.Book
-  alias Laibrary.Page
-  alias Laibrary.Service.OpenAiPageContentService
 
   def load_page_for_view(page_id, liveview_pid \\ self()) do
     page =

@@ -131,6 +131,12 @@ defmodule Laibrary.Service.OpenAiBookDetailsService do
   end
 
   @impl true
+  def handle_info({:openai_chunk, chunk}, state) do
+    OpenAI.EventParser.parse_chunk(chunk, self())
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_info(
         {{:response, :completed},
          %{"response" => %{"output" => [%{"content" => [%{"text" => json_content}]}]}}},

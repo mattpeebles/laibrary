@@ -17,7 +17,8 @@ defmodule Laibrary.Service.OpenAiPageContentService do
     :book,
     :page,
     :done?,
-    :stream_task_ref
+    :stream_task_ref,
+    :sse_parser
   ]
 
   @type state :: %__MODULE__{
@@ -28,6 +29,7 @@ defmodule Laibrary.Service.OpenAiPageContentService do
           page: Page.t(),
           done?: boolean(),
           stream_task_ref: reference(),
+          sse_parser: SSEParser.t()
         }
 
   def start_link(opts) do
@@ -57,7 +59,8 @@ defmodule Laibrary.Service.OpenAiPageContentService do
       page_deltas: [],
       page_acc: "",
       book: Keyword.fetch!(opts, :book),
-      page: Keyword.fetch!(opts, :page)
+      page: Keyword.fetch!(opts, :page),
+      sse_parser: %SSEParser{target_pid: self()}
     }
 
     {:ok, state, {:continue, :start_stream}}
@@ -96,6 +99,12 @@ defmodule Laibrary.Service.OpenAiPageContentService do
   end
 
   @impl true
+  def handle_info({:openai_chunk, chunk}, state) do
+    new_parser = SSEParser.feed(state.sse_parser, chunk)
+    {:noreply, %{state | sse_parser: new_parser}}
+  end
+
+  @impl true
   def handle_info(
         {{:response, :completed},
          %{"response" => %{"output" => [%{"content" => [%{"text" => json_content}]}]}}},
@@ -124,15 +133,17 @@ defmodule Laibrary.Service.OpenAiPageContentService do
       do: send_chunk(state, delta, delta["delta"])
 
   @impl true
-  def handle_info({{:response, event_type}, _payload}, state) do
+  def handle_info({{:response, event_type}, payload}, state) do
     IO.inspect(event_type, label: "Unhandled OpenAI Event Type")
+    IO.inspect(payload, label: "Unhandled OpenAI Event Payload")
     {:noreply, state}
   end
 
   @impl true
-  def handle_info({{:response, event_type, event_subtype}, _payload}, state) do
+  def handle_info({{:response, event_type, event_subtype}, payload}, state) do
     IO.inspect(event_type, label: "Unhandled OpenAI Event Type")
     IO.inspect(event_subtype, label: "Unhandled OpenAI Event Subtype")
+    IO.inspect(payload, label: "Unhandled OpenAI Event Payload")
     {:noreply, state}
   end
 
@@ -149,9 +160,9 @@ defmodule Laibrary.Service.OpenAiPageContentService do
   end
 
   @impl true
-  def handle_info({:DOWN, _ref, :process, _pid, _reason}, state) do
+  def handle_info({:DOWN, _ref, :process, _pid, reason}, state) do
     # Task ended too early
-    Logger.warning("Stream task exited before completion; waiting for completion...")
+    Logger.warning("Stream task exited before completion; waiting for completion... #{inspect(reason)}")
     {:noreply, %{state | stream_task_ref: nil}}
   end
 

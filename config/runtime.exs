@@ -5,8 +5,6 @@ import Dotenvy
 
 Dotenvy.source!(".env")
 
-IO.inspect(env!("OPENAI_API_KEY"), label: "Boot-time OPENAI_API_KEY")
-
 # Start server in releases if PHX_SERVER is set
 if System.get_env("PHX_SERVER") do
   config :laibrary, LaibraryWeb.Endpoint, server: true

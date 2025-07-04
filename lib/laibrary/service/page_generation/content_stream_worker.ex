@@ -4,16 +4,33 @@ defmodule Laibrary.Service.ContentStreamWorker do
   alias Laibrary.Service.PageContentOrchestrator
   alias Laibrary.Service.OpenAiPageContentService
 
-  def start_link(%{page_id: page_id, book_id: book_id, liveview_pid: liveview_pid, prompt: prompt}) do
+  def start_link(%{
+        page_id: page_id,
+        book_id: book_id,
+        liveview_pid: liveview_pid,
+        prompt: prompt
+      }) do
     name = via(page_id)
-    {:ok, _} = GenServer.start_link(__MODULE__, %{page_id: page_id, book_id: book_id, liveview_pid: liveview_pid, prompt: prompt}, name: name)
+
+    {:ok, _} =
+      GenServer.start_link(
+        __MODULE__,
+        %{page_id: page_id, book_id: book_id, liveview_pid: liveview_pid, prompt: prompt},
+        name: name
+      )
   end
 
   def via(page_id), do: {:via, Registry, {Laibrary.Registry, {:content_stream_worker, page_id}}}
 
   @impl true
   def init(opts) do
-    state = %{page_id: opts[:page_id], book_id: opts[:book_id], liveview_pid: opts[:liveview_pid], prompt: opts[:prompt]}
+    state = %{
+      page_id: opts[:page_id],
+      book_id: opts[:book_id],
+      liveview_pid: opts[:liveview_pid],
+      prompt: opts[:prompt]
+    }
+
     {:ok, state, {:continue, :start_stream}}
   end
 
@@ -29,18 +46,40 @@ defmodule Laibrary.Service.ContentStreamWorker do
     {:stop, :normal, state}
   end
 
+  @impl true
+  def handle_info({:DOWN, _ref, :process, _pid, reason}, state) do
+    IO.inspect(reason, label: "[Orchestrator DIED]")
+    {:stop, reason, state}
+  end
+
   defp stream_openai(liveview_pid, page_id, book_id, _prompt) do
-    case PageContentOrchestrator.start_link(%{page_id: page_id, liveview_pid: liveview_pid, book_id: book_id}) do
+    case PageContentOrchestrator.start_link(%{
+           page_id: page_id,
+           liveview_pid: liveview_pid,
+           book_id: book_id
+         }) do
       {:ok, orchestrator_pid} ->
+        # Monitor the orchestrator
+        Process.monitor(orchestrator_pid)
+
         case OpenAiPageContentService.start_stream(orchestrator_pid, book_id, page_id) do
           {:ok, _stream_pid} ->
-            IO.inspect(orchestrator_pid, label: "Content Stream Worker Orchestrator PID")
+            IO.inspect(orchestrator_pid, label: "Orchestrator PID (monitored)")
             {:ok, :stream_started}
+
           {:error, reason} ->
             {:error, reason}
         end
+
       {:error, reason} ->
         {:error, reason}
     end
   end
+
+@impl true
+def terminate(reason, _state) do
+  IO.inspect(reason, label: "[ContentStreamWorker Terminating]")
+  :ok
+end
+
 end
